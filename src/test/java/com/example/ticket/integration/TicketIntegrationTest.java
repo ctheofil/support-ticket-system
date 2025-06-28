@@ -79,7 +79,7 @@ class TicketIntegrationTest {
         .contentType(MediaType.APPLICATION_JSON)
         .content(patchBody))
       .andExpect(status().isOk())
-      .andExpect(jsonPath("$.status").value("IN_PROGRESS"));
+      .andExpect(jsonPath("$.status").value("in_progress"));
   }
 
   @DisplayName("Test Invalid Status- Transition from Closed")
@@ -139,7 +139,7 @@ class TicketIntegrationTest {
         .contentType(MediaType.APPLICATION_JSON)
         .content(commentBody))
       .andExpect(status().isOk())
-      .andExpect(jsonPath("$.comments[0].visibility").value("INTERNAL"));
+      .andExpect(jsonPath("$.comments[0].visibility").value("internal"));
   }
 
   @Test
@@ -191,7 +191,7 @@ class TicketIntegrationTest {
       .andExpect(jsonPath("$[?(@.ticketId=='" + ticketId + "')].comments").isArray())
       .andExpect(jsonPath("$[?(@.ticketId=='" + ticketId + "')].comments.length()").value(1))
       .andExpect(jsonPath("$[?(@.ticketId=='" + ticketId + "')].comments[0].content").value("This is a public comment visible to users"))
-      .andExpect(jsonPath("$[?(@.ticketId=='" + ticketId + "')].comments[0].visibility").value("PUBLIC"));
+      .andExpect(jsonPath("$[?(@.ticketId=='" + ticketId + "')].comments[0].visibility").value("public"));
 
     // Step 5: Request without filters (general listing) - should see all comments
     // Use JSONPath to find our specific ticket by ticketId and verify it has 2 comments
@@ -250,7 +250,7 @@ class TicketIntegrationTest {
       .andExpect(jsonPath("$.length()").value(1))
       .andExpect(jsonPath("$[0].userId").value("user-002"))
       .andExpect(jsonPath("$[0].comments.length()").value(1))
-      .andExpect(jsonPath("$[0].comments[0].visibility").value("PUBLIC"));
+      .andExpect(jsonPath("$[0].comments[0].visibility").value("public"));
   }
 
   @Test

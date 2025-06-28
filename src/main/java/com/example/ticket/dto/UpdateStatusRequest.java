@@ -1,6 +1,8 @@
 
 package com.example.ticket.dto;
 
+import jakarta.validation.constraints.NotBlank;
+
 /**
  * Data Transfer Object for updating the status of an existing ticket.
  * 
@@ -37,6 +39,10 @@ package com.example.ticket.dto;
  * @param status The new status to set for the ticket.
  *               Must be a valid TicketStatus enum value (open, in_progress, resolved, closed).
  *               The value is case-insensitive and will be converted to uppercase during processing.
+ *               Must not be null or empty.
  * @see com.example.ticket.model.TicketStatus
  */
-public record UpdateStatusRequest(String status) {}
+public record UpdateStatusRequest(
+    @NotBlank(message = "Status is required and cannot be empty. Valid values are: open, in_progress, resolved, closed")
+    String status
+) {}

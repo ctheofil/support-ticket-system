@@ -1,5 +1,9 @@
-
 package com.example.ticket.model;
+
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonValue;
+
+import java.util.Arrays;
 
 /**
  * Enumeration representing the possible states of a support ticket.
@@ -46,5 +50,53 @@ public enum TicketStatus {
      * Final status indicating the ticket is completely closed.
      * No further modifications are allowed once a ticket reaches this state.
      */
-    CLOSED
+    CLOSED;
+
+    /**
+     * Returns the lowercase string representation of the enum value with underscores.
+     * This is used for JSON serialization.
+     * 
+     * @return lowercase string representation (e.g., "in_progress")
+     */
+    @JsonValue
+    public String toValue() {
+        return this.name().toLowerCase();
+    }
+
+    /**
+     * Creates a TicketStatus enum from a string value (case-insensitive).
+     * This method is used by Jackson for JSON deserialization.
+     * 
+     * @param value the string value to convert
+     * @return the corresponding TicketStatus enum
+     * @throws IllegalArgumentException if the value is not a valid status option
+     */
+    @JsonCreator
+    public static TicketStatus fromValue(String value) {
+        if (value == null || value.trim().isEmpty()) {
+            throw new IllegalArgumentException("Status cannot be null or empty. Valid values are: " + getValidValues());
+        }
+        
+        String normalizedValue = value.trim().toUpperCase();
+        
+        try {
+            return TicketStatus.valueOf(normalizedValue);
+        } catch (IllegalArgumentException e) {
+            throw new IllegalArgumentException(
+                String.format("Invalid status value '%s'. Valid values are: %s", value, getValidValues())
+            );
+        }
+    }
+
+    /**
+     * Returns a comma-separated string of all valid status values.
+     * 
+     * @return string containing all valid values
+     */
+    private static String getValidValues() {
+        return Arrays.stream(TicketStatus.values())
+                .map(TicketStatus::toValue)
+                .reduce((a, b) -> a + ", " + b)
+                .orElse("");
+    }
 }

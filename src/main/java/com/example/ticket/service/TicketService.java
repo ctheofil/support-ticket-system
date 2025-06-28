@@ -209,7 +209,7 @@ public class TicketService {
         Ticket ticket = repository.findById(ticketId).orElseThrow();
         
         TicketStatus current = ticket.getStatus();
-        TicketStatus updated = TicketStatus.valueOf(newStatus.toUpperCase());
+        TicketStatus updated = TicketStatus.fromValue(newStatus);
         
         // Business rule: Cannot update closed tickets
         if (current == TicketStatus.CLOSED) {
@@ -262,14 +262,14 @@ public class TicketService {
     public Ticket addComment(UUID ticketId, AddCommentRequest request) {
         // Retrieve the ticket or throw exception if not found
         Ticket ticket = repository.findById(ticketId).orElseThrow();
-        
+
         // Create the new comment with generated ID and timestamp
         Comment comment = new Comment(
                 UUID.randomUUID(),
                 ticketId,
                 request.authorId(),
                 request.content(),
-                CommentVisibility.valueOf(request.visibility().toUpperCase()),
+                CommentVisibility.fromValue(request.visibility()),
                 LocalDateTime.now()
         );
         

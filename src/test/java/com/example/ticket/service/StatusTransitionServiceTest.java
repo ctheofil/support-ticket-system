@@ -232,17 +232,17 @@ class StatusTransitionServiceTest {
         }
 
         @Test
-        @DisplayName("Should throw NullPointerException for null status")
-        void shouldThrowNullPointerExceptionForNullStatus() {
+        @DisplayName("Should throw IllegalArgumentException for null status")
+        void shouldThrowIllegalArgumentExceptionForNullStatus() {
             // Given
             CreateTicketRequest request = new CreateTicketRequest("user-001", "Test ticket", "Description");
             Ticket ticket = ticketService.createTicket(request);
 
             // When & Then
             assertThrows(
-                NullPointerException.class,
+                IllegalArgumentException.class,
                 () -> ticketService.updateStatus(ticket.getTicketId(), null),
-                "Should throw NullPointerException for null status"
+                "Should throw IllegalArgumentException for null status"
             );
         }
 

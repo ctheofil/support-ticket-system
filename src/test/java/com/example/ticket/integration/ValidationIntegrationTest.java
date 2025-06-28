@@ -1,6 +1,7 @@
 package com.example.ticket.integration;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -234,7 +235,10 @@ class ValidationIntegrationTest {
       Arguments.of("authorId", "\"   \"", "authorId: Author ID is required and cannot be empty", "blank authorId"),
       Arguments.of("content", "null", "content: Content is required and cannot be empty", "null content"),
       Arguments.of("content", "\"\"", "content: Content is required and cannot be empty", "empty content"),
-      Arguments.of("content", "\"   \"", "content: Content is required and cannot be empty", "blank content")
+      Arguments.of("content", "\"   \"", "content: Content is required and cannot be empty", "blank content"),
+      Arguments.of("visibility", "null", "visibility: Visibility is required and cannot be empty. Valid values are: public, internal", "null visibility"),
+      Arguments.of("visibility", "\"\"", "visibility: Visibility is required and cannot be empty. Valid values are: public, internal", "empty visibility"),
+      Arguments.of("visibility", "\"   \"", "visibility: Visibility is required and cannot be empty. Valid values are: public, internal", "blank visibility")
     );
   }
 
@@ -262,12 +266,20 @@ class ValidationIntegrationTest {
             "visibility": "public"
           }
           """, fieldValue);
-    } else { // content field
+    } else if ("content".equals(fieldName)) {
       commentBody = String.format("""
           {
             "authorId": "valid-author",
             "content": %s,
             "visibility": "public"
+          }
+          """, fieldValue);
+    } else { // visibility field
+      commentBody = String.format("""
+          {
+            "authorId": "valid-author",
+            "content": "Valid content",
+            "visibility": %s
           }
           """, fieldValue);
     }
@@ -297,7 +309,7 @@ class ValidationIntegrationTest {
         {
           "authorId": "",
           "content": null,
-          "visibility": "public"
+          "visibility": "   "
         }
         """;
 
@@ -307,7 +319,232 @@ class ValidationIntegrationTest {
       .andExpect(status().isBadRequest())
       .andExpect(jsonPath("$.code").value("VALIDATION_ERROR"))
       .andExpect(jsonPath("$.message").value(org.hamcrest.Matchers.containsString("Author ID is required and cannot be empty")))
-      .andExpect(jsonPath("$.message").value(org.hamcrest.Matchers.containsString("Content is required and cannot be empty")));
+      .andExpect(jsonPath("$.message").value(org.hamcrest.Matchers.containsString("Content is required and cannot be empty")))
+      .andExpect(jsonPath("$.message").value(org.hamcrest.Matchers.containsString("Visibility is required and cannot be empty")));
+  }
+
+  @Test
+  @DisplayName("Should reject add comment request with invalid visibility enum value")
+  void testAddCommentWithInvalidVisibilityEnum() throws Exception {
+    // First create a ticket
+    CreateTicketRequest createRequest = new CreateTicketRequest("user-001", "Test Subject", "Test description");
+    String response = mockMvc.perform(post("/tickets")
+        .contentType(MediaType.APPLICATION_JSON)
+        .content(objectMapper.writeValueAsString(createRequest)))
+      .andExpect(status().isOk())
+      .andReturn().getResponse().getContentAsString();
+
+    UUID ticketId = UUID.fromString(objectMapper.readTree(response).get("ticketId").asText());
+
+    String commentBody = """
+        {
+          "authorId": "valid-author",
+          "content": "Valid content",
+          "visibility": "invalid"
+        }
+        """;
+
+    mockMvc.perform(post("/tickets/" + ticketId + "/comments")
+        .contentType(MediaType.APPLICATION_JSON)
+        .content(commentBody))
+      .andExpect(status().isBadRequest())
+      .andExpect(jsonPath("$.code").value("INVALID_ARGUMENT"))
+      .andExpect(jsonPath("$.message").value("Invalid visibility value 'invalid'. Valid values are: public, internal"));
+  }
+
+  @Test
+  @DisplayName("Should accept add comment request with valid visibility values")
+  void testAddCommentWithValidVisibilityValues() throws Exception {
+    // First create a ticket
+    CreateTicketRequest createRequest = new CreateTicketRequest("user-001", "Test Subject", "Test description");
+    String response = mockMvc.perform(post("/tickets")
+        .contentType(MediaType.APPLICATION_JSON)
+        .content(objectMapper.writeValueAsString(createRequest)))
+      .andExpect(status().isOk())
+      .andReturn().getResponse().getContentAsString();
+
+    UUID ticketId = UUID.fromString(objectMapper.readTree(response).get("ticketId").asText());
+
+    // Test with "public" visibility
+    String publicCommentBody = """
+        {
+          "authorId": "valid-author",
+          "content": "Public comment",
+          "visibility": "public"
+        }
+        """;
+
+    mockMvc.perform(post("/tickets/" + ticketId + "/comments")
+        .contentType(MediaType.APPLICATION_JSON)
+        .content(publicCommentBody))
+      .andExpect(status().isOk())
+      .andExpect(jsonPath("$.comments[0].visibility").value("public"));
+
+    // Test with "internal" visibility
+    String internalCommentBody = """
+        {
+          "authorId": "valid-author",
+          "content": "Internal comment",
+          "visibility": "internal"
+        }
+        """;
+
+    mockMvc.perform(post("/tickets/" + ticketId + "/comments")
+        .contentType(MediaType.APPLICATION_JSON)
+        .content(internalCommentBody))
+      .andExpect(status().isOk())
+      .andExpect(jsonPath("$.comments[1].visibility").value("internal"));
+
+    // Test with uppercase "PUBLIC" visibility (case-insensitive)
+    String upperCaseCommentBody = """
+        {
+          "authorId": "valid-author",
+          "content": "Uppercase comment",
+          "visibility": "PUBLIC"
+        }
+        """;
+
+    mockMvc.perform(post("/tickets/" + ticketId + "/comments")
+        .contentType(MediaType.APPLICATION_JSON)
+        .content(upperCaseCommentBody))
+      .andExpect(status().isOk())
+      .andExpect(jsonPath("$.comments[2].visibility").value("public"));
+  }
+
+  // ========== UPDATE STATUS VALIDATION TESTS ==========
+
+  @Test
+  @DisplayName("Should reject update status request with null status")
+  void testUpdateStatusWithNullStatus() throws Exception {
+    // First create a ticket
+    CreateTicketRequest createRequest = new CreateTicketRequest("user-001", "Test Subject", "Test description");
+    String response = mockMvc.perform(post("/tickets")
+        .contentType(MediaType.APPLICATION_JSON)
+        .content(objectMapper.writeValueAsString(createRequest)))
+      .andExpect(status().isOk())
+      .andReturn().getResponse().getContentAsString();
+
+    UUID ticketId = UUID.fromString(objectMapper.readTree(response).get("ticketId").asText());
+
+    String statusBody = """
+        {
+          "status": null
+        }
+        """;
+
+    mockMvc.perform(patch("/tickets/" + ticketId + "/status")
+        .contentType(MediaType.APPLICATION_JSON)
+        .content(statusBody))
+      .andExpect(status().isBadRequest())
+      .andExpect(jsonPath("$.code").value("VALIDATION_ERROR"))
+      .andExpect(jsonPath("$.message").value("status: Status is required and cannot be empty. Valid values are: open, in_progress, resolved, closed"));
+  }
+
+  @Test
+  @DisplayName("Should reject update status request with empty status")
+  void testUpdateStatusWithEmptyStatus() throws Exception {
+    // First create a ticket
+    CreateTicketRequest createRequest = new CreateTicketRequest("user-001", "Test Subject", "Test description");
+    String response = mockMvc.perform(post("/tickets")
+        .contentType(MediaType.APPLICATION_JSON)
+        .content(objectMapper.writeValueAsString(createRequest)))
+      .andExpect(status().isOk())
+      .andReturn().getResponse().getContentAsString();
+
+    UUID ticketId = UUID.fromString(objectMapper.readTree(response).get("ticketId").asText());
+
+    String statusBody = """
+        {
+          "status": ""
+        }
+        """;
+
+    mockMvc.perform(patch("/tickets/" + ticketId + "/status")
+        .contentType(MediaType.APPLICATION_JSON)
+        .content(statusBody))
+      .andExpect(status().isBadRequest())
+      .andExpect(jsonPath("$.code").value("VALIDATION_ERROR"))
+      .andExpect(jsonPath("$.message").value("status: Status is required and cannot be empty. Valid values are: open, in_progress, resolved, closed"));
+  }
+
+  @Test
+  @DisplayName("Should reject update status request with invalid status enum value")
+  void testUpdateStatusWithInvalidStatusEnum() throws Exception {
+    // First create a ticket
+    CreateTicketRequest createRequest = new CreateTicketRequest("user-001", "Test Subject", "Test description");
+    String response = mockMvc.perform(post("/tickets")
+        .contentType(MediaType.APPLICATION_JSON)
+        .content(objectMapper.writeValueAsString(createRequest)))
+      .andExpect(status().isOk())
+      .andReturn().getResponse().getContentAsString();
+
+    UUID ticketId = UUID.fromString(objectMapper.readTree(response).get("ticketId").asText());
+
+    String statusBody = """
+        {
+          "status": "invalid"
+        }
+        """;
+
+    mockMvc.perform(patch("/tickets/" + ticketId + "/status")
+        .contentType(MediaType.APPLICATION_JSON)
+        .content(statusBody))
+      .andExpect(status().isBadRequest())
+      .andExpect(jsonPath("$.code").value("INVALID_ARGUMENT"))
+      .andExpect(jsonPath("$.message").value("Invalid status value 'invalid'. Valid values are: open, in_progress, resolved, closed"));
+  }
+
+  @Test
+  @DisplayName("Should accept update status request with valid status values")
+  void testUpdateStatusWithValidStatusValues() throws Exception {
+    // First create a ticket
+    CreateTicketRequest createRequest = new CreateTicketRequest("user-001", "Test Subject", "Test description");
+    String response = mockMvc.perform(post("/tickets")
+        .contentType(MediaType.APPLICATION_JSON)
+        .content(objectMapper.writeValueAsString(createRequest)))
+      .andExpect(status().isOk())
+      .andReturn().getResponse().getContentAsString();
+
+    UUID ticketId = UUID.fromString(objectMapper.readTree(response).get("ticketId").asText());
+
+    // Test with "in_progress" status
+    String inProgressBody = """
+        {
+          "status": "in_progress"
+        }
+        """;
+
+    mockMvc.perform(patch("/tickets/" + ticketId + "/status")
+        .contentType(MediaType.APPLICATION_JSON)
+        .content(inProgressBody))
+      .andExpect(status().isOk())
+      .andExpect(jsonPath("$.status").value("in_progress"));
+
+    // Test with "resolved" status
+    String resolvedBody = """
+        {
+          "status": "resolved"
+        }
+        """;
+
+    mockMvc.perform(patch("/tickets/" + ticketId + "/status")
+        .contentType(MediaType.APPLICATION_JSON)
+        .content(resolvedBody))
+      .andExpect(status().isOk())
+      .andExpect(jsonPath("$.status").value("resolved"));
+
+    // Test with uppercase "CLOSED" status (case-insensitive)
+    String closedBody = """
+        {
+          "status": "CLOSED"
+        }
+        """;
+
+    mockMvc.perform(patch("/tickets/" + ticketId + "/status")
+        .contentType(MediaType.APPLICATION_JSON)
+        .content(closedBody))
+      .andExpect(status().isOk())
+      .andExpect(jsonPath("$.status").value("closed"));
   }
 
 }

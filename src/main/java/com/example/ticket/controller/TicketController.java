@@ -153,7 +153,7 @@ public class TicketController {
      * @throws IllegalStateException if attempting to update a closed ticket (500)
      */
     @PatchMapping("/{ticketId}/status")
-    public Ticket updateStatus(@PathVariable UUID ticketId, @RequestBody UpdateStatusRequest request) {
+    public Ticket updateStatus(@PathVariable UUID ticketId, @Valid @RequestBody UpdateStatusRequest request) {
         return ticketService.updateStatus(ticketId, request.status());
     }
 

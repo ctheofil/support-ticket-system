@@ -41,6 +41,7 @@ import jakarta.validation.constraints.NotBlank;
  *                to be added to the ticket. Must not be null or empty.
  * @param visibility Visibility level for this comment.
  *                   Must be either "public" or "internal" (case-insensitive).
+ *                   Must not be null or empty.
  *                   <p>Visibility options:</p>
  *                   <ul>
  *                     <li>public: Visible to both users and agents</li>
@@ -55,5 +56,6 @@ public record AddCommentRequest(
     @NotBlank(message = "Content is required and cannot be empty")
     String content,
     
+    @NotBlank(message = "Visibility is required and cannot be empty. Valid values are: public, internal")
     String visibility
 ) {}
