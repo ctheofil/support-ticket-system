@@ -237,8 +237,10 @@ class TicketFilteringServiceTest {
             // Given - all tickets get default assignee "agent-123"
             CreateTicketRequest request1 = new CreateTicketRequest("user-001", "Ticket 1", "Description 1");
             CreateTicketRequest request2 = new CreateTicketRequest("user-002", "Ticket 2", "Description 2");
-            ticketService.createTicket(request1);
-            ticketService.createTicket(request2);
+            Ticket ticket1 = ticketService.createTicket(request1);
+            ticket1.setAssigneeId("agent-123");
+            Ticket ticket2 = ticketService.createTicket(request2);
+            ticket2.setAssigneeId("agent-123");
 
             // When
             List<Ticket> agentTickets = ticketService.listTickets(null, null, "agent-123");
@@ -305,8 +307,11 @@ class TicketFilteringServiceTest {
             CreateTicketRequest request2 = new CreateTicketRequest("user-002", "Ticket 2", "Description 2");
             CreateTicketRequest request3 = new CreateTicketRequest("user-001", "Ticket 3", "Description 3");
             Ticket ticket1 = ticketService.createTicket(request1);
+            ticket1.setAssigneeId("agent-123");
             Ticket ticket2 = ticketService.createTicket(request2);
+            ticket2.setAssigneeId("agent-999");
             Ticket ticket3 = ticketService.createTicket(request3);
+            ticket3.setAssigneeId("agent-123");
             
             // Update one ticket status
             ticketService.updateStatus(ticket3.getTicketId(), "in_progress");
@@ -372,7 +377,7 @@ class TicketFilteringServiceTest {
             // Given
             CreateTicketRequest request = new CreateTicketRequest("user-001", "Test ticket", "Description");
             Ticket ticket = ticketService.createTicket(request);
-            
+            ticket.setAssigneeId("agent-123");
             // Add both public and internal comments
             AddCommentRequest publicComment = new AddCommentRequest("agent-123", "Public comment", "public");
             AddCommentRequest internalComment = new AddCommentRequest("agent-123", "Internal comment", "internal");

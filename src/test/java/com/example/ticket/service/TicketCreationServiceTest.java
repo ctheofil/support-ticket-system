@@ -54,7 +54,6 @@ class TicketCreationServiceTest {
         assertEquals("I was charged twice for the same order.", ticket.getDescription());
         assertEquals(TicketStatus.OPEN, ticket.getStatus(), "New tickets should have OPEN status");
         assertEquals("user-001", ticket.getUserId());
-        assertEquals("agent-123", ticket.getAssigneeId(), "Should have default assignee");
         assertNotNull(ticket.getCreatedAt(), "Created timestamp should be set");
         assertNotNull(ticket.getUpdatedAt(), "Updated timestamp should be set");
         assertTrue(ticket.getComments().isEmpty(), "New tickets should have no comments");

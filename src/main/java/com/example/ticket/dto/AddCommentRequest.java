@@ -1,6 +1,8 @@
 
 package com.example.ticket.dto;
 
+import jakarta.validation.constraints.NotBlank;
+
 /**
  * Data Transfer Object for adding comments to existing tickets.
  * 
@@ -33,10 +35,10 @@ package com.example.ticket.dto;
  * 
  * @param authorId Identifier of the user adding the comment.
  *                 Can be either a customer or support agent. Used for tracking
- *                 who made each comment and for access control.
+ *                 who made each comment and for access control. Must not be null or empty.
  * @param content The text content of the comment.
  *                Contains the actual message, note, or update information
- *                to be added to the ticket.
+ *                to be added to the ticket. Must not be null or empty.
  * @param visibility Visibility level for this comment.
  *                   Must be either "public" or "internal" (case-insensitive).
  *                   <p>Visibility options:</p>
@@ -47,7 +49,11 @@ package com.example.ticket.dto;
  * @see com.example.ticket.model.CommentVisibility
  */
 public record AddCommentRequest(
+    @NotBlank(message = "Author ID is required and cannot be empty")
     String authorId,
+    
+    @NotBlank(message = "Content is required and cannot be empty")
     String content,
+    
     String visibility
 ) {}

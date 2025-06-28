@@ -188,10 +188,10 @@ class TicketIntegrationTest {
     mockMvc.perform(get("/tickets")
         .param("userId", "user-001"))
       .andExpect(status().isOk())
-      .andExpect(jsonPath("$[0].comments").isArray())
-      .andExpect(jsonPath("$[0].comments.length()").value(1))
-      .andExpect(jsonPath("$[0].comments[0].content").value("This is a public comment visible to users"))
-      .andExpect(jsonPath("$[0].comments[0].visibility").value("PUBLIC"));
+      .andExpect(jsonPath("$[?(@.ticketId=='" + ticketId + "')].comments").isArray())
+      .andExpect(jsonPath("$[?(@.ticketId=='" + ticketId + "')].comments.length()").value(1))
+      .andExpect(jsonPath("$[?(@.ticketId=='" + ticketId + "')].comments[0].content").value("This is a public comment visible to users"))
+      .andExpect(jsonPath("$[?(@.ticketId=='" + ticketId + "')].comments[0].visibility").value("PUBLIC"));
 
     // Step 5: Request without filters (general listing) - should see all comments
     // Use JSONPath to find our specific ticket by ticketId and verify it has 2 comments

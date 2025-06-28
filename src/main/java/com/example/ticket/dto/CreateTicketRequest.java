@@ -1,6 +1,8 @@
 
 package com.example.ticket.dto;
 
+import jakarta.validation.constraints.NotBlank;
+
 /**
  * Data Transfer Object for creating new support tickets.
  * 
@@ -17,16 +19,21 @@ package com.example.ticket.dto;
  * 
  * @param userId Identifier of the user creating the ticket.
  *               Used to associate the ticket with the requesting user for tracking
- *               and access control purposes.
+ *               and access control purposes. Must not be null or empty.
  * @param subject Brief summary or title of the support request.
  *                Should be concise but descriptive enough to understand the nature
- *                of the issue or request.
+ *                of the issue or request. Must not be null or empty.
  * @param description Detailed description of the issue or request.
  *                    Should include all relevant information needed for support staff
- *                    to understand and address the problem.
+ *                    to understand and address the problem. Must not be null or empty.
  */
 public record CreateTicketRequest(
+    @NotBlank(message = "User ID is required and cannot be empty")
     String userId,
+    
+    @NotBlank(message = "Subject is required and cannot be empty")
     String subject,
+    
+    @NotBlank(message = "Description is required and cannot be empty")
     String description
 ) {}

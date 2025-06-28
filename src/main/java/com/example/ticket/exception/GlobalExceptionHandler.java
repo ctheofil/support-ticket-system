@@ -2,10 +2,12 @@ package com.example.ticket.exception;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 
 import java.util.NoSuchElementException;
+import java.util.stream.Collectors;
 
 /**
  * Global exception handler for the support ticket system.
@@ -16,6 +18,7 @@ import java.util.NoSuchElementException;
  * 
  * <p>Handles the following exceptions:</p>
  * <ul>
+ *   <li>MethodArgumentNotValidException - Bean validation failures (400 Bad Request)</li>
  *   <li>IllegalStateException - Business rule violations (500 Internal Server Error)</li>
  *   <li>IllegalArgumentException - Invalid input parameters (400 Bad Request)</li>
  *   <li>NoSuchElementException - Resource not found (404 Not Found)</li>
@@ -31,6 +34,27 @@ import java.util.NoSuchElementException;
  */
 @ControllerAdvice
 public class GlobalExceptionHandler {
+
+    /**
+     * Handles MethodArgumentNotValidException thrown when bean validation fails.
+     * 
+     * <p>This occurs when @Valid annotation validation fails on request bodies,
+     * such as when required fields are null or empty.</p>
+     * 
+     * @param ex the MethodArgumentNotValidException that was thrown
+     * @return ResponseEntity with 400 Bad Request status and validation error messages
+     */
+    @ExceptionHandler(MethodArgumentNotValidException.class)
+    public ResponseEntity<ErrorResponse> handleValidationException(MethodArgumentNotValidException ex) {
+        String message = ex.getBindingResult()
+                .getFieldErrors()
+                .stream()
+                .map(error -> error.getField() + ": " + error.getDefaultMessage())
+                .collect(Collectors.joining(", "));
+        
+        ErrorResponse error = new ErrorResponse("VALIDATION_ERROR", message);
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
+    }
 
     /**
      * Handles IllegalStateException thrown when business rules are violated.

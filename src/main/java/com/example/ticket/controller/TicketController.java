@@ -6,6 +6,7 @@ import com.example.ticket.model.Ticket;
 import com.example.ticket.service.TicketService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
+import jakarta.validation.Valid;
 
 import java.util.List;
 import java.util.UUID;
@@ -63,12 +64,19 @@ public class TicketController {
      * }
      * </pre>
      * 
+     * <p>Validation rules:</p>
+     * <ul>
+     *   <li>userId: Must not be null or empty</li>
+     *   <li>subject: Must not be null or empty</li>
+     *   <li>description: Must not be null or empty</li>
+     * </ul>
+     * 
      * @param request the ticket creation request containing user ID, subject, and description
      * @return the newly created ticket with generated ID, status, and timestamps
      * @throws IllegalArgumentException if request validation fails
      */
     @PostMapping
-    public Ticket createTicket(@RequestBody CreateTicketRequest request) {
+    public Ticket createTicket(@Valid @RequestBody CreateTicketRequest request) {
         return ticketService.createTicket(request);
     }
 
@@ -171,6 +179,12 @@ public class TicketController {
      *   <li>internal: Visible only to support staff</li>
      * </ul>
      * 
+     * <p>Validation rules:</p>
+     * <ul>
+     *   <li>authorId: Must not be null or empty</li>
+     *   <li>content: Must not be null or empty</li>
+     * </ul>
+     * 
      * <p>Business rules:</p>
      * <ul>
      *   <li>Only public comments are visible to users</li>
@@ -185,7 +199,7 @@ public class TicketController {
      * @throws IllegalArgumentException if the visibility value is invalid (400)
      */
     @PostMapping("/{ticketId}/comments")
-    public Ticket addComment(@PathVariable UUID ticketId, @RequestBody AddCommentRequest request) {
+    public Ticket addComment(@PathVariable UUID ticketId, @Valid @RequestBody AddCommentRequest request) {
         return ticketService.addComment(ticketId, request);
     }
 }

@@ -79,9 +79,8 @@ public class TicketService {
                 .ticketId(UUID.randomUUID())
                 .subject(request.subject())
                 .description(request.description())
-                .status(TicketStatus.OPEN) // All new tickets start as OPEN
+                .status(TicketStatus.OPEN)
                 .userId(request.userId())
-                .assigneeId("agent-123") // Adding a default hardcoded agent here just for testing (No agent-assigning api at the moment)
                 .createdAt(LocalDateTime.now())
                 .updatedAt(LocalDateTime.now())
                 .build();

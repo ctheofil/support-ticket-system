@@ -148,7 +148,7 @@ class CommentVisibilityServiceTest {
             // Given
             CreateTicketRequest request = new CreateTicketRequest("user-001", "Test ticket", "Description");
             Ticket ticket = ticketService.createTicket(request);
-            
+            ticket.setAssigneeId("agent-123");
             // Add both public and internal comments
             AddCommentRequest publicComment = new AddCommentRequest("agent-123", "Public comment", "public");
             AddCommentRequest internalComment = new AddCommentRequest("agent-123", "Internal comment", "internal");
@@ -267,6 +267,7 @@ class CommentVisibilityServiceTest {
             // Given
             CreateTicketRequest request = new CreateTicketRequest("customer-001", "Customer issue", "Need help");
             Ticket ticket = ticketService.createTicket(request);
+            ticket.setAssigneeId("agent-123");
             
             // Add various comment types
             ticketService.addComment(ticket.getTicketId(), new AddCommentRequest("customer-001", "Customer question", "public"));
