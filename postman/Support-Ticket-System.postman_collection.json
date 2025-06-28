@@ -1,0 +1,715 @@
+{
+	"info": {
+		"_postman_id": "a720dd77-ec45-4a66-9a25-87d07530a2c3",
+		"name": "Support Ticket System API",
+		"description": "Comprehensive API collection for testing the Support Ticket System microservice.\n\nThis collection includes:\n\n- Ticket creation and management\n    \n- Status transitions with validation\n    \n- Comment system (public/internal)\n    \n- Filtering and querying\n    \n\nBase URL: [http://localhost:8080](http://localhost:8080)\n\nFeatures tested:\n\n- Create tickets\n    \n- List tickets with filters\n    \n- Update ticket status\n    \n- Add comments with visibility controls",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "46272095",
+		"_collection_link": "https://christostheofilou.postman.co/workspace/Christos-Theofilou's-Workspace~832263cb-682f-4856-81ba-3d2bcc54e923/collection/46272095-a720dd77-ec45-4a66-9a25-87d07530a2c3?action=share&source=collection_link&creator=46272095"
+	},
+	"item": [
+		{
+			"name": "1. Create Tickets",
+			"item": [
+				{
+					"name": "Create Basic Ticket",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Response has ticket ID\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData).to.have.property('ticketId');",
+									"    pm.globals.set('basicTicketId', jsonData.ticketId);",
+									"});",
+									"",
+									"pm.test(\"Ticket has correct initial status\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.status).to.eql('OPEN');",
+									"});",
+									"",
+									"pm.test(\"Ticket has timestamps\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData).to.have.property('createdAt');",
+									"    pm.expect(jsonData).to.have.property('updatedAt');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"userId\": \"user-001\",\n  \"subject\": \"Payment issue\",\n  \"description\": \"I was charged twice for the same order.\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/tickets",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"tickets"
+							]
+						},
+						"description": "Creates a basic support ticket.\nThis matches the exact example from the README."
+					},
+					"response": []
+				},
+				{
+					"name": "Create Technical Issue Ticket",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Response has ticket ID\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData).to.have.property('ticketId');",
+									"    pm.globals.set('techTicketId', jsonData.ticketId);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"userId\": \"user-002\",\n  \"subject\": \"Login problems\",\n  \"description\": \"Cannot access my account. Getting 'Invalid credentials' error even with correct password.\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/tickets",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"tickets"
+							]
+						},
+						"description": "Creates a technical support ticket for testing different scenarios."
+					},
+					"response": []
+				},
+				{
+					"name": "Create Account Issue Ticket",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Response has ticket ID\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData).to.have.property('ticketId');",
+									"    pm.globals.set('accountTicketId', jsonData.ticketId);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"userId\": \"user-003\",\n  \"subject\": \"Account suspension inquiry\",\n  \"description\": \"My account was suspended without notice. I need clarification on the reason and steps to resolve this.\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/tickets",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"tickets"
+							]
+						},
+						"description": "Creates an account-related support ticket for comprehensive testing."
+					},
+					"response": []
+				}
+			],
+			"description": "Collection of requests for creating different types of support tickets.\nThese requests will create tickets that can be used in subsequent tests."
+		},
+		{
+			"name": "2. List Tickets",
+			"item": [
+				{
+					"name": "List All Tickets",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Response is an array\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData).to.be.an('array');",
+									"});",
+									"",
+									"pm.test(\"Tickets have required fields\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    if (jsonData.length > 0) {",
+									"        pm.expect(jsonData[0]).to.have.property('ticketId');",
+									"        pm.expect(jsonData[0]).to.have.property('subject');",
+									"        pm.expect(jsonData[0]).to.have.property('status');",
+									"        pm.expect(jsonData[0]).to.have.property('userId');",
+									"    }",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/tickets",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"tickets"
+							]
+						},
+						"description": "Retrieves all tickets in the system without any filters."
+					},
+					"response": []
+				},
+				{
+					"name": "List Open Tickets",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"All tickets have OPEN status\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    jsonData.forEach(function(ticket) {",
+									"        pm.expect(ticket.status).to.eql('OPEN');",
+									"    });",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/tickets?status=open",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"tickets"
+							],
+							"query": [
+								{
+									"key": "status",
+									"value": "open"
+								}
+							]
+						},
+						"description": "Filters tickets by OPEN status."
+					},
+					"response": []
+				},
+				{
+					"name": "List Tickets by User",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"All tickets belong to specified user\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    jsonData.forEach(function(ticket) {",
+									"        pm.expect(ticket.userId).to.eql('user-001');",
+									"    });",
+									"});",
+									"",
+									"pm.test(\"Only public comments visible (customer view)\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    jsonData.forEach(function(ticket) {",
+									"        if (ticket.comments && ticket.comments.length > 0) {",
+									"            ticket.comments.forEach(function(comment) {",
+									"                pm.expect(comment.visibility).to.eql('PUBLIC');",
+									"            });",
+									"        }",
+									"    });",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/tickets?userId=user-001",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"tickets"
+							],
+							"query": [
+								{
+									"key": "userId",
+									"value": "user-001"
+								}
+							]
+						},
+						"description": "Filters tickets by user ID. When userId is specified, only public comments should be visible (customer view)."
+					},
+					"response": []
+				},
+				{
+					"name": "List Tickets by Assignee",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/tickets?assigneeId=agent-123",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"tickets"
+							],
+							"query": [
+								{
+									"key": "assigneeId",
+									"value": "agent-123"
+								}
+							]
+						},
+						"description": "Filters tickets by assignee ID. When assigneeId is specified, all comments should be visible (agent view)."
+					},
+					"response": []
+				},
+				{
+					"name": "List with Multiple Filters",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/tickets?status=open&userId=user-001",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"tickets"
+							],
+							"query": [
+								{
+									"key": "status",
+									"value": "open"
+								},
+								{
+									"key": "userId",
+									"value": "user-001"
+								}
+							]
+						},
+						"description": "Combines multiple filters."
+					},
+					"response": []
+				}
+			],
+			"description": "Collection of requests for listing and filtering tickets with various query parameters."
+		},
+		{
+			"name": "3. Update Ticket Status",
+			"item": [
+				{
+					"name": "Update to In Progress",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Status updated correctly\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.status).to.eql('IN_PROGRESS');",
+									"});",
+									"",
+									"pm.test(\"Updated timestamp changed\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData).to.have.property('updatedAt');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"status\": \"in_progress\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/tickets/{{basicTicketId}}/status",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"tickets",
+								"{{basicTicketId}}",
+								"status"
+							]
+						},
+						"description": "Updates ticket status to IN_PROGRESS."
+					},
+					"response": []
+				},
+				{
+					"name": "Update to Resolved",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Status updated to resolved\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.status).to.eql('RESOLVED');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"status\": \"resolved\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/tickets/{{techTicketId}}/status",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"tickets",
+								"{{techTicketId}}",
+								"status"
+							]
+						},
+						"description": "Updates ticket status to RESOLVED."
+					},
+					"response": []
+				},
+				{
+					"name": "Update to Closed",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Status updated to closed\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.status).to.eql('CLOSED');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"status\": \"closed\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/tickets/{{accountTicketId}}/status",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"tickets",
+								"{{accountTicketId}}",
+								"status"
+							]
+						},
+						"description": "Updates ticket status to CLOSED."
+					},
+					"response": []
+				}
+			],
+			"description": "Collection of requests for updating ticket status through the lifecycle."
+		},
+		{
+			"name": "4. Add Comments",
+			"item": [
+				{
+					"name": "Add Public Comment",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Comment added to ticket\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.comments).to.be.an('array');",
+									"    pm.expect(jsonData.comments.length).to.be.greaterThan(0);",
+									"});",
+									"",
+									"pm.test(\"Comment has correct visibility\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    var lastComment = jsonData.comments[jsonData.comments.length - 1];",
+									"    pm.expect(lastComment.visibility).to.eql('PUBLIC');",
+									"});",
+									"",
+									"pm.test(\"Comment has required fields\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    var lastComment = jsonData.comments[jsonData.comments.length - 1];",
+									"    pm.expect(lastComment).to.have.property('commentId');",
+									"    pm.expect(lastComment).to.have.property('authorId');",
+									"    pm.expect(lastComment).to.have.property('content');",
+									"    pm.expect(lastComment).to.have.property('createdAt');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"authorId\": \"agent-123\",\n  \"content\": \"We're currently investigating your issue.\",\n  \"visibility\": \"public\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/tickets/{{basicTicketId}}/comments",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"tickets",
+								"{{basicTicketId}}",
+								"comments"
+							]
+						},
+						"description": "Adds a public comment."
+					},
+					"response": []
+				},
+				{
+					"name": "Add Internal Comment",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Internal comment added\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    var lastComment = jsonData.comments[jsonData.comments.length - 1];",
+									"    pm.expect(lastComment.visibility).to.eql('INTERNAL');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"authorId\": \"agent-456\",\n  \"content\": \"Customer called to follow up. Escalating to billing team.\",\n  \"visibility\": \"internal\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/tickets/{{basicTicketId}}/comments",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"tickets",
+								"{{basicTicketId}}",
+								"comments"
+							]
+						},
+						"description": "Adds an internal comment visible only to support staff."
+					},
+					"response": []
+				},
+				{
+					"name": "Add Customer Response",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Customer comment added\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    var lastComment = jsonData.comments[jsonData.comments.length - 1];",
+									"    pm.expect(lastComment.authorId).to.eql('user-001');",
+									"    pm.expect(lastComment.visibility).to.eql('PUBLIC');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"authorId\": \"user-001\",\n  \"content\": \"Thank you for looking into this. I can provide additional transaction details if needed.\",\n  \"visibility\": \"public\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/tickets/{{basicTicketId}}/comments",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"tickets",
+								"{{basicTicketId}}",
+								"comments"
+							]
+						},
+						"description": "Simulates a customer adding a response to their ticket."
+					},
+					"response": []
+				}
+			],
+			"description": "Collection of requests for adding comments with different visibility levels."
+		}
+	],
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		}
+	],
+	"variable": [
+		{
+			"key": "baseUrl",
+			"value": "http://localhost:8080",
+			"type": "string"
+		}
+	]
+}

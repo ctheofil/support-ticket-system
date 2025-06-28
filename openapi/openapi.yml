@@ -1,0 +1,638 @@
+openapi: 3.0.3
+info:
+  title: Support Ticket System API
+  description: |
+    A Spring Boot backend microservice for submitting and managing support tickets. 
+    This system allows users to create support tickets and enables agents to respond 
+    and update ticket statuses through a RESTful API.
+
+    ## Features
+    - Create and manage support tickets
+    - Status transition management with validation
+    - Public and internal comment system
+    - Filtering and querying capabilities
+    - Thread-safe in-memory storage
+    - Comprehensive error handling
+
+    ## Business Rules
+    ### Status Transitions
+    - `OPEN` → `IN_PROGRESS` (agent picks up ticket)
+    - `IN_PROGRESS` → `RESOLVED` (issue resolved)
+    - `RESOLVED` → `CLOSED` (user confirms or auto-close)
+    - `Any Status` → `CLOSED` (administrative closure)
+    - **Restriction**: Closed tickets cannot be reopened
+
+    ### Comment System
+    - **Public Comments**: Visible to both users and agents
+    - **Internal Comments**: Visible only to support staff
+    - **Audit Trail**: All comments are timestamped and attributed
+    - **Immutability**: Comments cannot be modified once created
+
+    ### Filtering Rules
+    - When `userId` is specified: Customer request → Only public comments visible
+    - When `assigneeId` is specified: Agent request → All comments visible
+    - When neither specified: All comments visible (general listing)
+
+  version: 1.0.0
+
+servers:
+  - url: http://localhost:8080
+    description: Local development server
+
+tags:
+  - name: tickets
+    description: Support ticket management operations
+  - name: comments
+    description: Ticket comment operations
+  - name: status
+    description: Ticket status management
+
+paths:
+  /tickets:
+    post:
+      tags:
+        - tickets
+      summary: Create a new support ticket
+      description: |
+        Creates a new support ticket with the provided details. The ticket will be 
+        automatically assigned a unique ID, timestamps, and initial status (OPEN).
+      operationId: createTicket
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateTicketRequest'
+            examples:
+              payment_issue:
+                summary: Payment Issue Example
+                value:
+                  userId: "user-001"
+                  subject: "Payment issue"
+                  description: "I was charged twice for the same order."
+              technical_issue:
+                summary: Technical Issue Example
+                value:
+                  userId: "user-002"
+                  subject: "Login problems"
+                  description: "Cannot access my account. Getting 'Invalid credentials' error even with correct password."
+      responses:
+        '200':
+          description: Ticket created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Ticket'
+              examples:
+                created_ticket:
+                  summary: Successfully Created Ticket
+                  value:
+                    ticketId: "123e4567-e89b-12d3-a456-426614174000"
+                    subject: "Payment issue"
+                    description: "I was charged twice for the same order."
+                    status: "OPEN"
+                    userId: "user-001"
+                    assigneeId: null
+                    createdAt: "2024-06-28T10:00:00Z"
+                    updatedAt: "2024-06-28T10:00:00Z"
+                    comments: []
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+    get:
+      tags:
+        - tickets
+      summary: List tickets with optional filtering
+      description: |
+        Retrieves a list of tickets with optional filtering by status, user ID, and assignee ID.
+        All filter parameters are optional - if not provided, all tickets are returned.
+        Multiple filters can be applied simultaneously.
+
+        **Comment Visibility Rules:**
+        - When `userId` is specified: Customer request → Only public comments visible
+        - When `assigneeId` is specified: Agent request → All comments visible  
+        - When neither specified: All comments visible (general listing)
+      operationId: listTickets
+      parameters:
+        - name: status
+          in: query
+          description: Filter by ticket status (case-insensitive)
+          required: false
+          schema:
+            $ref: '#/components/schemas/TicketStatus'
+          example: "open"
+        - name: userId
+          in: query
+          description: |
+            Filter by the user who created the ticket (for customer view).
+            When specified, only public comments are visible in responses.
+          required: false
+          schema:
+            type: string
+          example: "user-001"
+        - name: assigneeId
+          in: query
+          description: |
+            Filter by the assigned support agent (for agent view).
+            When specified, all comments (public and internal) are visible in responses.
+          required: false
+          schema:
+            type: string
+          example: "agent-123"
+      responses:
+        '200':
+          description: List of tickets matching the specified criteria
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Ticket'
+              examples:
+                all_tickets:
+                  summary: All Tickets
+                  value:
+                    - ticketId: "123e4567-e89b-12d3-a456-426614174000"
+                      subject: "Payment issue"
+                      status: "OPEN"
+                      userId: "user-001"
+                      createdAt: "2024-06-28T10:00:00Z"
+                      comments: []
+                filtered_by_status:
+                  summary: Filtered by Status
+                  value:
+                    - ticketId: "123e4567-e89b-12d3-a456-426614174000"
+                      subject: "Payment issue"
+                      status: "OPEN"
+                      userId: "user-001"
+                      createdAt: "2024-06-28T10:00:00Z"
+                      comments: []
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /tickets/{ticketId}/status:
+    patch:
+      tags:
+        - status
+      summary: Update the status of an existing ticket
+      description: |
+        Updates the status of a ticket through the ticket lifecycle. Status transitions 
+        are validated according to business rules.
+
+        **Valid Status Transitions:**
+        - `OPEN` → `IN_PROGRESS` (agent picks up ticket)
+        - `IN_PROGRESS` → `RESOLVED` (issue resolved)  
+        - `RESOLVED` → `CLOSED` (user confirms or auto-close)
+        - `Any Status` → `CLOSED` (administrative closure)
+
+        **Business Rules:**
+        - Closed tickets cannot have their status updated
+        - Status must be a valid TicketStatus enum value
+        - Status transitions are enforced to prevent invalid state changes
+      operationId: updateTicketStatus
+      parameters:
+        - name: ticketId
+          in: path
+          description: The UUID of the ticket to update
+          required: true
+          schema:
+            type: string
+            format: uuid
+          example: "123e4567-e89b-12d3-a456-426614174000"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateStatusRequest'
+            examples:
+              to_in_progress:
+                summary: Update to In Progress
+                value:
+                  status: "in_progress"
+              to_resolved:
+                summary: Update to Resolved
+                value:
+                  status: "resolved"
+              to_closed:
+                summary: Update to Closed
+                value:
+                  status: "closed"
+      responses:
+        '200':
+          description: Ticket status updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Ticket'
+              examples:
+                updated_status:
+                  summary: Status Updated Successfully
+                  value:
+                    ticketId: "123e4567-e89b-12d3-a456-426614174000"
+                    subject: "Payment issue"
+                    description: "I was charged twice for the same order."
+                    status: "IN_PROGRESS"
+                    userId: "user-001"
+                    assigneeId: "agent-123"
+                    createdAt: "2024-06-28T10:00:00Z"
+                    updatedAt: "2024-06-28T10:15:00Z"
+                    comments: []
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          description: |
+            Internal server error. This can occur when attempting to update 
+            a closed ticket or other business rule violations.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                closed_ticket_error:
+                  summary: Closed Ticket Update Attempt
+                  value:
+                    error: "Internal Server Error"
+                    message: "Cannot update status of closed ticket"
+                    timestamp: "2024-06-28T10:00:00Z"
+
+  /tickets/{ticketId}/comments:
+    post:
+      tags:
+        - comments
+      summary: Add a comment to an existing ticket
+      description: |
+        Adds a comment to a ticket for communication and tracking purposes. 
+        Comments can be either public (visible to customers) or internal 
+        (visible only to support staff).
+
+        **Visibility Options:**
+        - `public`: Visible to both users and agents
+        - `internal`: Visible only to support staff
+
+        **Business Rules:**
+        - Only public comments are visible to users
+        - Agents can add both public and internal comments
+        - Comments are immutable once created for audit trail
+        - Comments are automatically timestamped and assigned unique IDs
+      operationId: addComment
+      parameters:
+        - name: ticketId
+          in: path
+          description: The UUID of the ticket to add the comment to
+          required: true
+          schema:
+            type: string
+            format: uuid
+          example: "123e4567-e89b-12d3-a456-426614174000"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AddCommentRequest'
+            examples:
+              public_comment:
+                summary: Public Comment (Agent)
+                value:
+                  authorId: "agent-123"
+                  content: "We're currently investigating your issue."
+                  visibility: "public"
+              internal_comment:
+                summary: Internal Comment (Agent)
+                value:
+                  authorId: "agent-456"
+                  content: "Customer called to follow up. Escalating to billing team."
+                  visibility: "internal"
+              customer_response:
+                summary: Customer Response
+                value:
+                  authorId: "user-001"
+                  content: "Thank you for looking into this. I can provide additional transaction details if needed."
+                  visibility: "public"
+      responses:
+        '200':
+          description: Comment added successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Ticket'
+              examples:
+                ticket_with_comment:
+                  summary: Ticket with New Comment
+                  value:
+                    ticketId: "123e4567-e89b-12d3-a456-426614174000"
+                    subject: "Payment issue"
+                    description: "I was charged twice for the same order."
+                    status: "IN_PROGRESS"
+                    userId: "user-001"
+                    assigneeId: "agent-123"
+                    createdAt: "2024-06-28T10:00:00Z"
+                    updatedAt: "2024-06-28T10:30:00Z"
+                    comments:
+                      - commentId: "456e7890-e89b-12d3-a456-426614174001"
+                        ticketId: "123e4567-e89b-12d3-a456-426614174000"
+                        authorId: "agent-123"
+                        content: "We're currently investigating your issue."
+                        visibility: "PUBLIC"
+                        createdAt: "2024-06-28T10:30:00Z"
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+components:
+  schemas:
+    CreateTicketRequest:
+      type: object
+      required:
+        - userId
+        - subject
+        - description
+      properties:
+        userId:
+          type: string
+          description: |
+            Identifier of the user creating the ticket. Used to associate 
+            the ticket with the requesting user for tracking and access control purposes.
+          example: "user-001"
+        subject:
+          type: string
+          description: |
+            Brief summary or title of the support request. Should be concise 
+            but descriptive enough to understand the nature of the issue or request.
+          example: "Payment issue"
+        description:
+          type: string
+          description: |
+            Detailed description of the issue or request. Should include all 
+            relevant information needed for support staff to understand and address the problem.
+          example: "I was charged twice for the same order."
+
+    UpdateStatusRequest:
+      type: object
+      required:
+        - status
+      properties:
+        status:
+          type: string
+          description: |
+            The new status to set for the ticket. Must be a valid TicketStatus 
+            enum value (case-insensitive). The value will be converted to uppercase during processing.
+          enum: [open, in_progress, resolved, closed]
+          example: "in_progress"
+
+    AddCommentRequest:
+      type: object
+      required:
+        - authorId
+        - content
+        - visibility
+      properties:
+        authorId:
+          type: string
+          description: |
+            Identifier of the user adding the comment. Can be either a customer 
+            or support agent. Used for tracking who made each comment and for access control.
+          example: "agent-123"
+        content:
+          type: string
+          description: |
+            The text content of the comment. Contains the actual message, note, 
+            or update information to be added to the ticket.
+          example: "We're currently investigating your issue."
+        visibility:
+          type: string
+          description: |
+            Visibility level for this comment. Must be either "public" or "internal" (case-insensitive).
+            - public: Visible to both users and agents
+            - internal: Visible only to support staff
+          enum: [public, internal]
+          example: "public"
+
+    Ticket:
+      type: object
+      properties:
+        ticketId:
+          type: string
+          format: uuid
+          description: Unique identifier for the ticket. Generated automatically when a ticket is created.
+          example: "123e4567-e89b-12d3-a456-426614174000"
+        subject:
+          type: string
+          description: Brief summary or title of the support request.
+          example: "Payment issue"
+        description:
+          type: string
+          description: Detailed description of the support request or issue.
+          example: "I was charged twice for the same order."
+        status:
+          $ref: '#/components/schemas/TicketStatus'
+        userId:
+          type: string
+          description: Identifier of the user who created the ticket.
+          example: "user-001"
+        assigneeId:
+          type: string
+          nullable: true
+          description: Identifier of the support agent assigned to handle this ticket. Can be null if not assigned.
+          example: "agent-123"
+        createdAt:
+          type: string
+          format: date-time
+          description: Timestamp when the ticket was initially created. Set automatically and never modified.
+          example: "2024-06-28T10:00:00Z"
+        updatedAt:
+          type: string
+          format: date-time
+          description: Timestamp when the ticket was last modified. Updated whenever status changes or comments are added.
+          example: "2024-06-28T10:15:00Z"
+        comments:
+          type: array
+          items:
+            $ref: '#/components/schemas/Comment'
+          description: List of comments associated with this ticket. Includes both public and internal comments based on access level.
+
+    Comment:
+      type: object
+      properties:
+        commentId:
+          type: string
+          format: uuid
+          description: Unique identifier for this comment. Generated automatically when the comment is created.
+          example: "456e7890-e89b-12d3-a456-426614174001"
+        ticketId:
+          type: string
+          format: uuid
+          description: Identifier of the ticket this comment belongs to. Used to maintain the relationship between comments and tickets.
+          example: "123e4567-e89b-12d3-a456-426614174000"
+        authorId:
+          type: string
+          description: Identifier of the user who authored this comment. Can be either a customer or a support agent.
+          example: "agent-123"
+        content:
+          type: string
+          description: The actual text content of the comment. Contains the message, note, or update information.
+          example: "We're currently investigating your issue."
+        visibility:
+          $ref: '#/components/schemas/CommentVisibility'
+        createdAt:
+          type: string
+          format: date-time
+          description: Timestamp when this comment was created. Set automatically when the comment is added and never modified.
+          example: "2024-06-28T10:30:00Z"
+
+    TicketStatus:
+      type: string
+      enum: [OPEN, IN_PROGRESS, RESOLVED, CLOSED]
+      description: |
+        Current status of the ticket in its lifecycle. Determines what actions can be performed on the ticket.
+        
+        **Status Descriptions:**
+        - `OPEN`: Initial status when a ticket is first created. Waiting to be picked up by a support agent.
+        - `IN_PROGRESS`: A support agent is actively working on the ticket.
+        - `RESOLVED`: The issue has been resolved by the support team. Waiting for user confirmation.
+        - `CLOSED`: Final status indicating the ticket is completely closed. No further modifications allowed.
+      example: "OPEN"
+
+    CommentVisibility:
+      type: string
+      enum: [PUBLIC, INTERNAL]
+      description: |
+        Visibility level of the comment. Determines whether the comment is visible to customers or internal only.
+        
+        **Visibility Levels:**
+        - `PUBLIC`: Visible to all parties including the ticket creator. Used for customer communication.
+        - `INTERNAL`: Visible only to support staff and administrators. Used for internal notes and discussions.
+      example: "PUBLIC"
+
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+          description: Error type or category
+          example: "Bad Request"
+        message:
+          type: string
+          description: Detailed error message explaining what went wrong
+          example: "Validation failed for field 'status': must be one of [open, in_progress, resolved, closed]"
+        timestamp:
+          type: string
+          format: date-time
+          description: Timestamp when the error occurred
+          example: "2024-06-28T10:00:00Z"
+
+  responses:
+    BadRequest:
+      description: |
+        Bad Request. The request was invalid or cannot be served. This can occur due to:
+        - Missing required fields
+        - Invalid field values
+        - Malformed request body
+        - Invalid enum values (status, visibility)
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          examples:
+            missing_field:
+              summary: Missing Required Field
+              value:
+                error: "Bad Request"
+                message: "Field 'description' is required"
+                timestamp: "2024-06-28T10:00:00Z"
+            invalid_status:
+              summary: Invalid Status Value
+              value:
+                error: "Bad Request"
+                message: "Invalid status value 'invalid_status'. Must be one of: open, in_progress, resolved, closed"
+                timestamp: "2024-06-28T10:00:00Z"
+            invalid_visibility:
+              summary: Invalid Visibility Value
+              value:
+                error: "Bad Request"
+                message: "Invalid visibility value 'invalid_visibility'. Must be one of: public, internal"
+                timestamp: "2024-06-28T10:00:00Z"
+
+    NotFound:
+      description: |
+        Not Found. The requested resource could not be found. This typically occurs when:
+        - Ticket ID does not exist
+        - Invalid UUID format for ticket ID
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          examples:
+            ticket_not_found:
+              summary: Ticket Not Found
+              value:
+                error: "Not Found"
+                message: "Ticket with ID '123e4567-e89b-12d3-a456-426614174000' not found"
+                timestamp: "2024-06-28T10:00:00Z"
+
+    InternalServerError:
+      description: |
+        Internal Server Error. An unexpected error occurred on the server. This can happen due to:
+        - Business rule violations (e.g., updating closed ticket status)
+        - System errors
+        - Database connectivity issues
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          examples:
+            business_rule_violation:
+              summary: Business Rule Violation
+              value:
+                error: "Internal Server Error"
+                message: "Cannot update status of closed ticket"
+                timestamp: "2024-06-28T10:00:00Z"
+            system_error:
+              summary: System Error
+              value:
+                error: "Internal Server Error"
+                message: "An unexpected error occurred while processing the request"
+                timestamp: "2024-06-28T10:00:00Z"
+
+  examples:
+    PaymentIssueTicket:
+      summary: Payment Issue Ticket
+      description: Example ticket for payment-related issues
+      value:
+        userId: "user-001"
+        subject: "Payment issue"
+        description: "I was charged twice for the same order."
+
+    TechnicalIssueTicket:
+      summary: Technical Issue Ticket
+      description: Example ticket for technical problems
+      value:
+        userId: "user-002"
+        subject: "Login problems"
+        description: "Cannot access my account. Getting 'Invalid credentials' error even with correct password."
+
+    PublicAgentComment:
+      summary: Public Agent Comment
+      description: Public comment from support agent
+      value:
+        authorId: "agent-123"
+        content: "We're currently investigating your issue."
+        visibility: "public"
+
+    InternalAgentComment:
+      summary: Internal Agent Comment
+      description: Internal comment for support staff only
+      value:
+        authorId: "agent-456"
+        content: "Customer called to follow up. Escalating to billing team."
+        visibility: "internal"
