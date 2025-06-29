@@ -177,13 +177,17 @@ public class GlobalExceptionHandler {
 }
 ```
 
+## Logging
+The application uses Logstash JSON encoder for structured logging with profile-based log levels.
+
 ## Technology Stack
 - **Java 17**: Modern Java features including Records for immutable data classes
-- **Spring Boot 3.1.2**: Framework for rapid development
+- **Spring Boot 3.5.3**: Framework for rapid development
 - **Maven**: Dependency management and build tool
 - **JUnit 5**: Testing framework with comprehensive test coverage
 - **Lombok**: Reducing boilerplate code (used selectively with Records)
 - **Jackson**: JSON serialization/deserialization
+- **Logstash Logback Encoder**: Structured JSON logging
 
 ## Project Structure
 ```
@@ -200,6 +204,4 @@ src/
     ├── service/                        # Unit tests
     ├── integration/                    # Integration tests
     └── exception/                      # Exception handler tests
-```
-    └── integration/                    # Integration tests
 ```

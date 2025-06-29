@@ -2,6 +2,7 @@
 package com.example.ticket.repository;
 
 import com.example.ticket.model.Ticket;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Repository;
 
 import java.util.*;
@@ -38,6 +39,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * @version 1.0
  * @since 1.0
  */
+@Slf4j
 @Repository
 public class TicketRepository {
     
@@ -74,6 +76,7 @@ public class TicketRepository {
      */
     public Ticket save(Ticket ticket) {
         tickets.put(ticket.getTicketId(), ticket);
+        log.debug("Saved ticket {} to repository", ticket.getTicketId());
         return ticket;
     }
 
@@ -88,7 +91,9 @@ public class TicketRepository {
      * @throws NullPointerException if id is null
      */
     public Optional<Ticket> findById(UUID id) {
-        return Optional.ofNullable(tickets.get(id));
+        Optional<Ticket> ticket = Optional.ofNullable(tickets.get(id));
+        log.debug("Looking up ticket {}: {}", id, ticket.isPresent() ? "found" : "not found");
+        return ticket;
     }
 
     /**
@@ -109,6 +114,8 @@ public class TicketRepository {
      * @return a Collection of all tickets in the repository
      */
     public Collection<Ticket> findAll() {
-        return tickets.values();
+        Collection<Ticket> allTickets = tickets.values();
+        log.debug("Retrieved {} tickets from repository", allTickets.size());
+        return allTickets;
     }
 }

@@ -5,6 +5,7 @@ import com.example.ticket.dto.*;
 import com.example.ticket.model.Ticket;
 import com.example.ticket.service.TicketService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
 import jakarta.validation.Valid;
 
@@ -37,6 +38,7 @@ import java.util.NoSuchElementException;
  * @version 1.0
  * @since 1.0
  */
+@Slf4j
 @RestController
 @RequestMapping("/tickets")
 @RequiredArgsConstructor
@@ -77,7 +79,10 @@ public class TicketController {
      */
     @PostMapping
     public Ticket createTicket(@Valid @RequestBody CreateTicketRequest request) {
-        return ticketService.createTicket(request);
+        log.info("Creating ticket for user: {}", request.userId());
+        Ticket ticket = ticketService.createTicket(request);
+        log.info("Created ticket with ID: {}", ticket.getTicketId());
+        return ticket;
     }
 
     /**
@@ -119,7 +124,10 @@ public class TicketController {
     public List<Ticket> listTickets(@RequestParam(required = false) String status,
                                     @RequestParam(required = false) String userId,
                                     @RequestParam(required = false) String assigneeId) {
-        return ticketService.listTickets(status, userId, assigneeId);
+        log.info("Listing tickets with filters - status: {}, userId: {}, assigneeId: {}", status, userId, assigneeId);
+        List<Ticket> tickets = ticketService.listTickets(status, userId, assigneeId);
+        log.info("Found {} tickets", tickets.size());
+        return tickets;
     }
 
     /**
@@ -154,7 +162,10 @@ public class TicketController {
      */
     @PatchMapping("/{ticketId}/status")
     public Ticket updateStatus(@PathVariable UUID ticketId, @Valid @RequestBody UpdateStatusRequest request) {
-        return ticketService.updateStatus(ticketId, request.status());
+        log.info("Updating ticket {} status to: {}", ticketId, request.status());
+        Ticket ticket = ticketService.updateStatus(ticketId, request.status());
+        log.info("Successfully updated ticket {} status", ticketId);
+        return ticket;
     }
 
     /**
@@ -200,6 +211,9 @@ public class TicketController {
      */
     @PostMapping("/{ticketId}/comments")
     public Ticket addComment(@PathVariable UUID ticketId, @Valid @RequestBody AddCommentRequest request) {
-        return ticketService.addComment(ticketId, request);
+        log.info("Adding comment to ticket {} by author: {}", ticketId, request.authorId());
+        Ticket ticket = ticketService.addComment(ticketId, request);
+        log.info("Successfully added comment to ticket {}", ticketId);
+        return ticket;
     }
 }

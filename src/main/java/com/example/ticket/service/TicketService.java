@@ -5,6 +5,7 @@ import com.example.ticket.dto.*;
 import com.example.ticket.model.*;
 import com.example.ticket.repository.TicketRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -40,6 +41,7 @@ import java.util.*;
  * @version 1.0
  * @since 1.0
  */
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class TicketService {
@@ -75,6 +77,7 @@ public class TicketService {
      * @throws NullPointerException if request or any required field is null
      */
     public Ticket createTicket(CreateTicketRequest request) {
+        log.debug("Creating new ticket for user: {}", request.userId());
         Ticket ticket = Ticket.builder()
                 .ticketId(UUID.randomUUID())
                 .subject(request.subject())
@@ -84,7 +87,9 @@ public class TicketService {
                 .createdAt(LocalDateTime.now())
                 .updatedAt(LocalDateTime.now())
                 .build();
-        return repository.save(ticket);
+        Ticket savedTicket = repository.save(ticket);
+        log.info("Created ticket {} for user {}", savedTicket.getTicketId(), request.userId());
+        return savedTicket;
     }
 
     /**
@@ -123,7 +128,8 @@ public class TicketService {
      * @return a list of tickets matching the specified criteria with appropriate comment filtering
      */
     public List<Ticket> listTickets(String status, String userId, String assigneeId) {
-        return repository.findAll().stream()
+        log.debug("Filtering tickets with status: {}, userId: {}, assigneeId: {}", status, userId, assigneeId);
+        List<Ticket> filteredTickets = repository.findAll().stream()
                 // Filter by status if provided (case-insensitive comparison)
                 .filter(t -> status == null || t.getStatus().name().equalsIgnoreCase(status))
                 // Filter by user ID if provided (exact match)
@@ -133,6 +139,9 @@ public class TicketService {
                 // Apply comment visibility filtering based on request type
                 .map(ticket -> filterCommentsBasedOnRequestType(ticket, userId))
                 .toList();
+        
+        log.debug("Filtered {} tickets from repository", filteredTickets.size());
+        return filteredTickets;
     }
 
     /**
@@ -155,6 +164,7 @@ public class TicketService {
     private Ticket filterCommentsBasedOnRequestType(Ticket ticket, String userId) {
         // If userId is specified, this is a customer request - show only public comments
         if (userId != null) {
+            log.debug("Filtering comments for customer request - ticket: {}", ticket.getTicketId());
             List<Comment> publicComments = ticket.getComments().stream()
                     .filter(comment -> comment.visibility() == CommentVisibility.PUBLIC)
                     .toList();
@@ -205,6 +215,7 @@ public class TicketService {
      * @throws IllegalStateException if attempting to update a closed ticket (business rule violation)
      */
     public Ticket updateStatus(UUID ticketId, String newStatus) {
+        log.debug("Updating ticket {} status to {}", ticketId, newStatus);
         // Retrieve the ticket or throw exception if not found
         Ticket ticket = repository.findById(ticketId).orElseThrow();
         
@@ -213,6 +224,7 @@ public class TicketService {
         
         // Business rule: Cannot update closed tickets
         if (current == TicketStatus.CLOSED) {
+            log.error("Attempted to update closed ticket: {}", ticketId);
             throw new IllegalStateException("Cannot update closed ticket");
         }
         
@@ -220,7 +232,9 @@ public class TicketService {
         ticket.setStatus(updated);
         ticket.setUpdatedAt(LocalDateTime.now());
         
-        return repository.save(ticket);
+        Ticket savedTicket = repository.save(ticket);
+        log.info("Updated ticket {} status from {} to {}", ticketId, current, updated);
+        return savedTicket;
     }
 
     /**
@@ -260,6 +274,7 @@ public class TicketService {
      * @throws IllegalArgumentException if the visibility value is not valid (public/internal)
      */
     public Ticket addComment(UUID ticketId, AddCommentRequest request) {
+        log.debug("Adding comment to ticket {} by author {}", ticketId, request.authorId());
         // Retrieve the ticket or throw exception if not found
         Ticket ticket = repository.findById(ticketId).orElseThrow();
 
@@ -277,6 +292,8 @@ public class TicketService {
         ticket.getComments().add(comment);
         ticket.setUpdatedAt(LocalDateTime.now());
         
-        return repository.save(ticket);
+        Ticket savedTicket = repository.save(ticket);
+        log.info("Added {} comment to ticket {} by {}", request.visibility(), ticketId, request.authorId());
+        return savedTicket;
     }
 }
