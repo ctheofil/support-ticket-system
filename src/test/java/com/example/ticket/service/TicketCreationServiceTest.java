@@ -8,15 +8,11 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
-import java.time.LocalDateTime;
-import java.util.UUID;
-
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * Unit tests focused specifically on ticket creation functionality.
- * 
- * This test class covers all aspects of ticket creation including:
+ * This test class covers all aspects of ticket creation including
  * - Field validation and assignment
  * - ID generation and uniqueness
  * - Timestamp handling

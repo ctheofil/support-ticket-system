@@ -413,9 +413,10 @@ class ValidationIntegrationTest {
 
   // ========== UPDATE STATUS VALIDATION TESTS ==========
 
-  @Test
-  @DisplayName("Should reject update status request with null status")
-  void testUpdateStatusWithNullStatus() throws Exception {
+  @ParameterizedTest
+  @MethodSource("invalidStatusTestCases")
+  @DisplayName("Should reject update status request with invalid status values")
+  void testUpdateStatusWithInvalidValues(String statusValue, String expectedCode, String expectedMessage) throws Exception {
     // First create a ticket
     CreateTicketRequest createRequest = new CreateTicketRequest("user-001", "Test Subject", "Test description");
     String response = mockMvc.perform(post("/tickets")
@@ -426,72 +427,26 @@ class ValidationIntegrationTest {
 
     UUID ticketId = UUID.fromString(objectMapper.readTree(response).get("ticketId").asText());
 
-    String statusBody = """
+    String statusBody = String.format("""
         {
-          "status": null
+          "status": %s
         }
-        """;
+        """, statusValue);
 
     mockMvc.perform(patch("/tickets/" + ticketId + "/status")
         .contentType(MediaType.APPLICATION_JSON)
         .content(statusBody))
       .andExpect(status().isBadRequest())
-      .andExpect(jsonPath("$.code").value("VALIDATION_ERROR"))
-      .andExpect(jsonPath("$.message").value("status: Status is required and cannot be empty. Valid values are: open, in_progress, resolved, closed"));
+      .andExpect(jsonPath("$.code").value(expectedCode))
+      .andExpect(jsonPath("$.message").value(expectedMessage));
   }
 
-  @Test
-  @DisplayName("Should reject update status request with empty status")
-  void testUpdateStatusWithEmptyStatus() throws Exception {
-    // First create a ticket
-    CreateTicketRequest createRequest = new CreateTicketRequest("user-001", "Test Subject", "Test description");
-    String response = mockMvc.perform(post("/tickets")
-        .contentType(MediaType.APPLICATION_JSON)
-        .content(objectMapper.writeValueAsString(createRequest)))
-      .andExpect(status().isOk())
-      .andReturn().getResponse().getContentAsString();
-
-    UUID ticketId = UUID.fromString(objectMapper.readTree(response).get("ticketId").asText());
-
-    String statusBody = """
-        {
-          "status": ""
-        }
-        """;
-
-    mockMvc.perform(patch("/tickets/" + ticketId + "/status")
-        .contentType(MediaType.APPLICATION_JSON)
-        .content(statusBody))
-      .andExpect(status().isBadRequest())
-      .andExpect(jsonPath("$.code").value("VALIDATION_ERROR"))
-      .andExpect(jsonPath("$.message").value("status: Status is required and cannot be empty. Valid values are: open, in_progress, resolved, closed"));
-  }
-
-  @Test
-  @DisplayName("Should reject update status request with invalid status enum value")
-  void testUpdateStatusWithInvalidStatusEnum() throws Exception {
-    // First create a ticket
-    CreateTicketRequest createRequest = new CreateTicketRequest("user-001", "Test Subject", "Test description");
-    String response = mockMvc.perform(post("/tickets")
-        .contentType(MediaType.APPLICATION_JSON)
-        .content(objectMapper.writeValueAsString(createRequest)))
-      .andExpect(status().isOk())
-      .andReturn().getResponse().getContentAsString();
-
-    UUID ticketId = UUID.fromString(objectMapper.readTree(response).get("ticketId").asText());
-
-    String statusBody = """
-        {
-          "status": "invalid"
-        }
-        """;
-
-    mockMvc.perform(patch("/tickets/" + ticketId + "/status")
-        .contentType(MediaType.APPLICATION_JSON)
-        .content(statusBody))
-      .andExpect(status().isBadRequest())
-      .andExpect(jsonPath("$.code").value("INVALID_ARGUMENT"))
-      .andExpect(jsonPath("$.message").value("Invalid status value 'invalid'. Valid values are: open, in_progress, resolved, closed"));
+  private static Stream<Arguments> invalidStatusTestCases() {
+    return Stream.of(
+      Arguments.of("null", "VALIDATION_ERROR", "status: Status is required and cannot be empty. Valid values are: open, in_progress, resolved, closed"),
+      Arguments.of("\"\"", "VALIDATION_ERROR", "status: Status is required and cannot be empty. Valid values are: open, in_progress, resolved, closed"),
+      Arguments.of("\"invalid\"", "INVALID_ARGUMENT", "Invalid status value 'invalid'. Valid values are: open, in_progress, resolved, closed")
+    );
   }
 
   @Test

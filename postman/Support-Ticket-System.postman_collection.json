@@ -30,7 +30,7 @@
 									"",
 									"pm.test(\"Ticket has correct initial status\", function () {",
 									"    var jsonData = pm.response.json();",
-									"    pm.expect(jsonData.status).to.eql('OPEN');",
+									"    pm.expect(jsonData.status).to.eql('open');",
 									"});",
 									"",
 									"pm.test(\"Ticket has timestamps\", function () {",
@@ -223,10 +223,10 @@
 									"    pm.response.to.have.status(200);",
 									"});",
 									"",
-									"pm.test(\"All tickets have OPEN status\", function () {",
+									"pm.test(\"All tickets have open status\", function () {",
 									"    var jsonData = pm.response.json();",
 									"    jsonData.forEach(function(ticket) {",
-									"        pm.expect(ticket.status).to.eql('OPEN');",
+									"        pm.expect(ticket.status).to.eql('open');",
 									"    });",
 									"});"
 								],
@@ -252,7 +252,7 @@
 								}
 							]
 						},
-						"description": "Filters tickets by OPEN status."
+						"description": "Filters tickets by open status."
 					},
 					"response": []
 				},

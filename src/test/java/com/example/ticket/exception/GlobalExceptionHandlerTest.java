@@ -131,9 +131,12 @@ class GlobalExceptionHandlerTest {
         ResponseEntity<GlobalExceptionHandler.ErrorResponse> elementResponse = exceptionHandler.handleNoSuchElementException(elementException);
 
         // Then
-        assertNotEquals(stateResponse.getBody().code(), argumentResponse.getBody().code());
-        assertNotEquals(stateResponse.getBody().code(), elementResponse.getBody().code());
-        assertNotEquals(argumentResponse.getBody().code(), elementResponse.getBody().code());
+      assertNotNull(stateResponse.getBody());
+      assertNotNull(argumentResponse.getBody());
+      assertNotNull(elementResponse.getBody());
+      assertNotEquals(stateResponse.getBody().code(), argumentResponse.getBody().code());
+      assertNotEquals(stateResponse.getBody().code(), elementResponse.getBody().code());
+      assertNotEquals(argumentResponse.getBody().code(), elementResponse.getBody().code());
         
         assertEquals("BUSINESS_RULE_VIOLATION", stateResponse.getBody().code());
         assertEquals("INVALID_ARGUMENT", argumentResponse.getBody().code());

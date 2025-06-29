@@ -17,8 +17,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * Unit tests focused specifically on comment visibility functionality.
- * 
- * This test class covers all aspects of comment visibility including:
+ * This test class covers all aspects of comment visibility including
  * - Public vs internal comment creation
  * - Visibility filtering based on request type (customer vs agent)
  * - Business rule: "Only public comments are visible to users"
@@ -29,11 +28,10 @@ import static org.junit.jupiter.api.Assertions.*;
 class CommentVisibilityServiceTest {
 
     private TicketService ticketService;
-    private TicketRepository ticketRepository;
 
-    @BeforeEach
+  @BeforeEach
     void setup() {
-        ticketRepository = new TicketRepository();
+    TicketRepository ticketRepository = new TicketRepository();
         ticketService = new TicketService(ticketRepository);
     }
 

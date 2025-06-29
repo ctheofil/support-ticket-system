@@ -8,10 +8,14 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import java.time.LocalDateTime;
 import java.util.NoSuchElementException;
 import java.util.UUID;
+import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -89,7 +93,7 @@ class StatusTransitionServiceTest {
         }
 
         @Test
-        @DisplayName("Should update status from any status to CLOSED (administrative closure)")
+        @DisplayName("Should update status from any status to CLOSED")
         void shouldUpdateStatusFromAnyStatusToClosed() {
             // Given
             CreateTicketRequest request = new CreateTicketRequest("user-001", "Test ticket", "Description");
@@ -216,9 +220,10 @@ class StatusTransitionServiceTest {
             );
         }
 
-        @Test
-        @DisplayName("Should throw IllegalArgumentException for invalid status")
-        void shouldThrowIllegalArgumentExceptionForInvalidStatus() {
+        @ParameterizedTest
+        @MethodSource("invalidStatusValues")
+        @DisplayName("Should throw IllegalArgumentException for invalid status values")
+        void shouldThrowIllegalArgumentExceptionForInvalidStatus(String invalidStatus, String testDescription) {
             // Given
             CreateTicketRequest request = new CreateTicketRequest("user-001", "Test ticket", "Description");
             Ticket ticket = ticketService.createTicket(request);
@@ -226,38 +231,16 @@ class StatusTransitionServiceTest {
             // When & Then
             assertThrows(
                 IllegalArgumentException.class,
-                () -> ticketService.updateStatus(ticket.getTicketId(), "invalid_status"),
-                "Should throw IllegalArgumentException for invalid status"
+                () -> ticketService.updateStatus(ticket.getTicketId(), invalidStatus),
+                testDescription
             );
         }
 
-        @Test
-        @DisplayName("Should throw IllegalArgumentException for null status")
-        void shouldThrowIllegalArgumentExceptionForNullStatus() {
-            // Given
-            CreateTicketRequest request = new CreateTicketRequest("user-001", "Test ticket", "Description");
-            Ticket ticket = ticketService.createTicket(request);
-
-            // When & Then
-            assertThrows(
-                IllegalArgumentException.class,
-                () -> ticketService.updateStatus(ticket.getTicketId(), null),
-                "Should throw IllegalArgumentException for null status"
-            );
-        }
-
-        @Test
-        @DisplayName("Should throw IllegalArgumentException for empty status")
-        void shouldThrowIllegalArgumentExceptionForEmptyStatus() {
-            // Given
-            CreateTicketRequest request = new CreateTicketRequest("user-001", "Test ticket", "Description");
-            Ticket ticket = ticketService.createTicket(request);
-
-            // When & Then
-            assertThrows(
-                IllegalArgumentException.class,
-                () -> ticketService.updateStatus(ticket.getTicketId(), ""),
-                "Should throw IllegalArgumentException for empty status"
+        private static Stream<Arguments> invalidStatusValues() {
+            return Stream.of(
+                Arguments.of("invalid_status", "Should throw IllegalArgumentException for invalid status"),
+                Arguments.of(null, "Should throw IllegalArgumentException for null status"),
+                Arguments.of("", "Should throw IllegalArgumentException for empty status")
             );
         }
     }

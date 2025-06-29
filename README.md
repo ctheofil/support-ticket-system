@@ -22,7 +22,7 @@ An OpenAPI Specification is located in openapi/openapi.yml
 
 ### Running the Application
 ```bash
-# Using Maven wrapper (recommended)
+# Using Maven wrapper
 ./mvnw spring-boot:run
 
 # Or using system Maven
@@ -47,13 +47,13 @@ docker run -p 8080:8080 support-ticket-system
 ./mvnw test
 
 # Run specific test class
-./mvnw test -Dtest=TicketServiceTest
+./mvnw test -Dtest=TicketCreationServiceTest
 
 # Run with coverage
 ./mvnw test jacoco:report
 ```
 ## How to Test
-Go to the postman directory in the project where you will find a README file on how to test the project using the postman collection.
+In the project, you can find a postman directory which contains a README file on how to test the project using a Postman collection.
 
 ## API Endpoints
 
