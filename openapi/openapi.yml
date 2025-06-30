@@ -25,6 +25,7 @@ info:
     ### Comment System
     - **Public Comments**: Visible to both users and agents
     - **Internal Comments**: Visible only to support staff
+    - **User Restrictions**: Users (authorId starting with "user-") can only post public comments
     - **Audit Trail**: All comments are timestamped and attributed
     - **Immutability**: Comments cannot be modified once created
 
@@ -32,6 +33,16 @@ info:
     - When `userId` is specified: Customer request → Only public comments visible
     - When `assigneeId` is specified: Agent request → All comments visible
     - When neither specified: All comments visible (general listing)
+
+    ## Error Handling
+    All error responses follow a consistent format with two fields:
+    - `code`: Technical error code (e.g., "VALIDATION_ERROR", "RESOURCE_NOT_FOUND")
+    - `message`: Human-readable error description
+    
+    Common error scenarios:
+    - **400 Bad Request**: Validation errors, invalid enum values, user permission violations
+    - **404 Not Found**: Ticket not found
+    - **500 Internal Server Error**: Business rule violations (e.g., updating closed tickets)
 
   version: 1.0.0
 
@@ -258,9 +269,8 @@ paths:
                 closed_ticket_error:
                   summary: Closed Ticket Update Attempt
                   value:
-                    error: "Internal Server Error"
-                    message: "Cannot update status of closed ticket"
-                    timestamp: "2024-06-28T10:00:00Z"
+                    code: "BUSINESS_RULE_VIOLATION"
+                    message: "Cannot update closed ticket"
 
   /tickets/{ticketId}/comments:
     post:
@@ -517,28 +527,24 @@ components:
     ErrorResponse:
       type: object
       properties:
-        error:
+        code:
           type: string
-          description: Error type or category
-          example: "Bad Request"
+          description: Error code or category
+          example: "VALIDATION_ERROR"
         message:
           type: string
           description: Detailed error message explaining what went wrong
-          example: "Validation failed for field 'status': must be one of [open, in_progress, resolved, closed]"
-        timestamp:
-          type: string
-          format: date-time
-          description: Timestamp when the error occurred
-          example: "2024-06-28T10:00:00Z"
+          example: "userId: User ID is required and cannot be empty, subject: Subject is required and cannot be empty"
 
   responses:
     BadRequest:
       description: |
         Bad Request. The request was invalid or cannot be served. This can occur due to:
-        - Missing required fields
+        - Missing required fields (validation errors)
         - Invalid field values
         - Malformed request body
         - Invalid enum values (status, visibility)
+        - Business rule violations (e.g., users trying to post internal comments)
       content:
         application/json:
           schema:
@@ -547,21 +553,28 @@ components:
             missing_field:
               summary: Missing Required Field
               value:
-                error: "Bad Request"
-                message: "Field 'description' is required"
-                timestamp: "2024-06-28T10:00:00Z"
+                code: "VALIDATION_ERROR"
+                message: "description: Description is required and cannot be empty"
+            multiple_validation_errors:
+              summary: Multiple Validation Errors
+              value:
+                code: "VALIDATION_ERROR"
+                message: "userId: User ID is required and cannot be empty, subject: Subject is required and cannot be empty, description: Description is required and cannot be empty"
             invalid_status:
               summary: Invalid Status Value
               value:
-                error: "Bad Request"
-                message: "Invalid status value 'invalid_status'. Must be one of: open, in_progress, resolved, closed"
-                timestamp: "2024-06-28T10:00:00Z"
+                code: "INVALID_ARGUMENT"
+                message: "Invalid status value 'invalid_status'. Valid values are: open, in_progress, resolved, closed"
             invalid_visibility:
               summary: Invalid Visibility Value
               value:
-                error: "Bad Request"
-                message: "Invalid visibility value 'invalid_visibility'. Must be one of: public, internal"
-                timestamp: "2024-06-28T10:00:00Z"
+                code: "INVALID_ARGUMENT"
+                message: "Invalid visibility value 'invalid_visibility'. Valid values are: public, internal"
+            user_comment_restriction:
+              summary: User Comment Restriction
+              value:
+                code: "INVALID_ARGUMENT"
+                message: "Users can only post public comments"
 
     NotFound:
       description: |
@@ -576,9 +589,8 @@ components:
             ticket_not_found:
               summary: Ticket Not Found
               value:
-                error: "Not Found"
-                message: "Ticket with ID '123e4567-e89b-12d3-a456-426614174000' not found"
-                timestamp: "2024-06-28T10:00:00Z"
+                code: "RESOURCE_NOT_FOUND"
+                message: "The requested resource was not found"
 
     InternalServerError:
       description: |
@@ -594,15 +606,13 @@ components:
             business_rule_violation:
               summary: Business Rule Violation
               value:
-                error: "Internal Server Error"
-                message: "Cannot update status of closed ticket"
-                timestamp: "2024-06-28T10:00:00Z"
+                code: "BUSINESS_RULE_VIOLATION"
+                message: "Cannot update closed ticket"
             system_error:
               summary: System Error
               value:
-                error: "Internal Server Error"
-                message: "An unexpected error occurred while processing the request"
-                timestamp: "2024-06-28T10:00:00Z"
+                code: "BUSINESS_RULE_VIOLATION"
+                message: "An unexpected business rule violation occurred"
 
   examples:
     PaymentIssueTicket:
