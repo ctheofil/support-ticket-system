@@ -6,6 +6,7 @@ import com.example.ticket.model.Ticket;
 import com.example.ticket.service.TicketService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 import jakarta.validation.Valid;
 
@@ -78,6 +79,7 @@ public class TicketController {
      * @throws IllegalArgumentException if request validation fails
      */
     @PostMapping
+    @ResponseStatus(HttpStatus.CREATED)
     public Ticket createTicket(@Valid @RequestBody CreateTicketRequest request) {
         log.info("Creating ticket for user: {}", request.userId());
         Ticket ticket = ticketService.createTicket(request);
@@ -199,6 +201,7 @@ public class TicketController {
      * <p>Business rules:</p>
      * <ul>
      *   <li>Only public comments are visible to users</li>
+     *   <li>Users (authorId starting with "user-") can only post public comments</li>
      *   <li>Agents can add both public and internal comments</li>
      *   <li>Comments are immutable once created for audit trail</li>
      * </ul>
@@ -207,9 +210,10 @@ public class TicketController {
      * @param request the comment request containing author, content, and visibility
      * @return the updated ticket with the new comment added
      * @throws NoSuchElementException if no ticket exists with the given ID (404)
-     * @throws IllegalArgumentException if the visibility value is invalid (400)
+     * @throws IllegalArgumentException if the visibility value is invalid or user tries to post internal comment (400)
      */
     @PostMapping("/{ticketId}/comments")
+    @ResponseStatus(HttpStatus.CREATED)
     public Ticket addComment(@PathVariable UUID ticketId, @Valid @RequestBody AddCommentRequest request) {
         log.info("Adding comment to ticket {} by author: {}", ticketId, request.authorId());
         Ticket ticket = ticketService.addComment(ticketId, request);

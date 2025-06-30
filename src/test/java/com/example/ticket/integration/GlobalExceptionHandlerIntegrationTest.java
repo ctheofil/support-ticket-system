@@ -35,7 +35,7 @@ class GlobalExceptionHandlerIntegrationTest {
         String response = mockMvc.perform(post("/tickets")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
-                .andExpect(status().isOk())
+                .andExpect(status().isCreated())
                 .andReturn().getResponse().getContentAsString();
 
         UUID ticketId = UUID.fromString(objectMapper.readTree(response).get("ticketId").asText());
@@ -74,7 +74,7 @@ class GlobalExceptionHandlerIntegrationTest {
         String response = mockMvc.perform(post("/tickets")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
-                .andExpect(status().isOk())
+                .andExpect(status().isCreated())
                 .andReturn().getResponse().getContentAsString();
 
         UUID ticketId = UUID.fromString(objectMapper.readTree(response).get("ticketId").asText());
@@ -149,7 +149,7 @@ class GlobalExceptionHandlerIntegrationTest {
         String response = mockMvc.perform(post("/tickets")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
-                .andExpect(status().isOk())
+                .andExpect(status().isCreated())
                 .andReturn().getResponse().getContentAsString();
 
         UUID ticketId = UUID.fromString(objectMapper.readTree(response).get("ticketId").asText());
@@ -196,7 +196,7 @@ class GlobalExceptionHandlerIntegrationTest {
         String response = mockMvc.perform(post("/tickets")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
-                .andExpect(status().isOk())
+                .andExpect(status().isCreated())
                 .andReturn().getResponse().getContentAsString();
 
         UUID ticketId = UUID.fromString(objectMapper.readTree(response).get("ticketId").asText());

@@ -251,7 +251,7 @@ class ValidationIntegrationTest {
     String response = mockMvc.perform(post("/tickets")
         .contentType(MediaType.APPLICATION_JSON)
         .content(objectMapper.writeValueAsString(createRequest)))
-      .andExpect(status().isOk())
+      .andExpect(status().isCreated())
       .andReturn().getResponse().getContentAsString();
 
     UUID ticketId = UUID.fromString(objectMapper.readTree(response).get("ticketId").asText());
@@ -300,7 +300,7 @@ class ValidationIntegrationTest {
     String response = mockMvc.perform(post("/tickets")
         .contentType(MediaType.APPLICATION_JSON)
         .content(objectMapper.writeValueAsString(createRequest)))
-      .andExpect(status().isOk())
+      .andExpect(status().isCreated())
       .andReturn().getResponse().getContentAsString();
 
     UUID ticketId = UUID.fromString(objectMapper.readTree(response).get("ticketId").asText());
@@ -331,7 +331,7 @@ class ValidationIntegrationTest {
     String response = mockMvc.perform(post("/tickets")
         .contentType(MediaType.APPLICATION_JSON)
         .content(objectMapper.writeValueAsString(createRequest)))
-      .andExpect(status().isOk())
+      .andExpect(status().isCreated())
       .andReturn().getResponse().getContentAsString();
 
     UUID ticketId = UUID.fromString(objectMapper.readTree(response).get("ticketId").asText());
@@ -360,7 +360,7 @@ class ValidationIntegrationTest {
     String response = mockMvc.perform(post("/tickets")
         .contentType(MediaType.APPLICATION_JSON)
         .content(objectMapper.writeValueAsString(createRequest)))
-      .andExpect(status().isOk())
+      .andExpect(status().isCreated())
       .andReturn().getResponse().getContentAsString();
 
     UUID ticketId = UUID.fromString(objectMapper.readTree(response).get("ticketId").asText());
@@ -377,7 +377,7 @@ class ValidationIntegrationTest {
     mockMvc.perform(post("/tickets/" + ticketId + "/comments")
         .contentType(MediaType.APPLICATION_JSON)
         .content(publicCommentBody))
-      .andExpect(status().isOk())
+      .andExpect(status().isCreated())
       .andExpect(jsonPath("$.comments[0].visibility").value("public"));
 
     // Test with "internal" visibility
@@ -392,7 +392,7 @@ class ValidationIntegrationTest {
     mockMvc.perform(post("/tickets/" + ticketId + "/comments")
         .contentType(MediaType.APPLICATION_JSON)
         .content(internalCommentBody))
-      .andExpect(status().isOk())
+      .andExpect(status().isCreated())
       .andExpect(jsonPath("$.comments[1].visibility").value("internal"));
 
     // Test with uppercase "PUBLIC" visibility (case-insensitive)
@@ -407,7 +407,7 @@ class ValidationIntegrationTest {
     mockMvc.perform(post("/tickets/" + ticketId + "/comments")
         .contentType(MediaType.APPLICATION_JSON)
         .content(upperCaseCommentBody))
-      .andExpect(status().isOk())
+      .andExpect(status().isCreated())
       .andExpect(jsonPath("$.comments[2].visibility").value("public"));
   }
 
@@ -422,7 +422,7 @@ class ValidationIntegrationTest {
     String response = mockMvc.perform(post("/tickets")
         .contentType(MediaType.APPLICATION_JSON)
         .content(objectMapper.writeValueAsString(createRequest)))
-      .andExpect(status().isOk())
+      .andExpect(status().isCreated())
       .andReturn().getResponse().getContentAsString();
 
     UUID ticketId = UUID.fromString(objectMapper.readTree(response).get("ticketId").asText());
@@ -457,7 +457,7 @@ class ValidationIntegrationTest {
     String response = mockMvc.perform(post("/tickets")
         .contentType(MediaType.APPLICATION_JSON)
         .content(objectMapper.writeValueAsString(createRequest)))
-      .andExpect(status().isOk())
+      .andExpect(status().isCreated())
       .andReturn().getResponse().getContentAsString();
 
     UUID ticketId = UUID.fromString(objectMapper.readTree(response).get("ticketId").asText());

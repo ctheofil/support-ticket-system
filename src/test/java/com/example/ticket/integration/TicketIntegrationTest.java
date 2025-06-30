@@ -36,7 +36,7 @@ class TicketIntegrationTest {
     mockMvc.perform(post("/tickets")
         .contentType(MediaType.APPLICATION_JSON)
         .content(objectMapper.writeValueAsString(request)))
-      .andExpect(status().isOk())
+      .andExpect(status().isCreated())
       .andExpect(jsonPath("$.subject").value("Integration Test"));
   }
 
@@ -48,7 +48,7 @@ class TicketIntegrationTest {
     mockMvc.perform(post("/tickets")
         .contentType(MediaType.APPLICATION_JSON)
         .content(objectMapper.writeValueAsString(request)))
-      .andExpect(status().isOk());
+      .andExpect(status().isCreated());
 
     mockMvc.perform(get("/tickets")
         .param("userId", "filter-user"))
@@ -64,7 +64,7 @@ class TicketIntegrationTest {
     String response = mockMvc.perform(post("/tickets")
         .contentType(MediaType.APPLICATION_JSON)
         .content(objectMapper.writeValueAsString(createRequest)))
-      .andExpect(status().isOk())
+      .andExpect(status().isCreated())
       .andReturn().getResponse().getContentAsString();
 
     UUID ticketId = UUID.fromString(objectMapper.readTree(response).get("ticketId").asText());
@@ -90,6 +90,7 @@ class TicketIntegrationTest {
     String response = mockMvc.perform(post("/tickets")
         .contentType(MediaType.APPLICATION_JSON)
         .content(objectMapper.writeValueAsString(request)))
+      .andExpect(status().isCreated())
       .andReturn().getResponse().getContentAsString();
 
     UUID ticketId = UUID.fromString(objectMapper.readTree(response).get("ticketId").asText());
@@ -123,6 +124,7 @@ class TicketIntegrationTest {
     String response = mockMvc.perform(post("/tickets")
         .contentType(MediaType.APPLICATION_JSON)
         .content(objectMapper.writeValueAsString(request)))
+      .andExpect(status().isCreated())
       .andReturn().getResponse().getContentAsString();
 
     UUID ticketId = UUID.fromString(objectMapper.readTree(response).get("ticketId").asText());
@@ -138,7 +140,7 @@ class TicketIntegrationTest {
     mockMvc.perform(post("/tickets/" + ticketId + "/comments")
         .contentType(MediaType.APPLICATION_JSON)
         .content(commentBody))
-      .andExpect(status().isOk())
+      .andExpect(status().isCreated())
       .andExpect(jsonPath("$.comments[0].visibility").value("internal"));
   }
 
@@ -151,7 +153,7 @@ class TicketIntegrationTest {
     String response = mockMvc.perform(post("/tickets")
         .contentType(MediaType.APPLICATION_JSON)
         .content(objectMapper.writeValueAsString(request)))
-      .andExpect(status().isOk())
+      .andExpect(status().isCreated())
       .andReturn().getResponse().getContentAsString();
 
     UUID ticketId = UUID.fromString(objectMapper.readTree(response).get("ticketId").asText());
@@ -168,7 +170,7 @@ class TicketIntegrationTest {
     mockMvc.perform(post("/tickets/" + ticketId + "/comments")
         .contentType(MediaType.APPLICATION_JSON)
         .content(publicComment))
-      .andExpect(status().isOk());
+      .andExpect(status().isCreated());
 
     // Step 3: Add an internal comment
     String internalComment = """
@@ -182,7 +184,7 @@ class TicketIntegrationTest {
     mockMvc.perform(post("/tickets/" + ticketId + "/comments")
         .contentType(MediaType.APPLICATION_JSON)
         .content(internalComment))
-      .andExpect(status().isOk());
+      .andExpect(status().isCreated());
 
     // Step 4: Request tickets with userId filter (customer request) - should see only public comment
     mockMvc.perform(get("/tickets")
@@ -209,7 +211,7 @@ class TicketIntegrationTest {
     String response = mockMvc.perform(post("/tickets")
         .contentType(MediaType.APPLICATION_JSON)
         .content(objectMapper.writeValueAsString(request)))
-      .andExpect(status().isOk())
+      .andExpect(status().isCreated())
       .andReturn().getResponse().getContentAsString();
 
     UUID ticketId = UUID.fromString(objectMapper.readTree(response).get("ticketId").asText());
@@ -234,12 +236,12 @@ class TicketIntegrationTest {
     mockMvc.perform(post("/tickets/" + ticketId + "/comments")
         .contentType(MediaType.APPLICATION_JSON)
         .content(publicComment))
-      .andExpect(status().isOk());
+      .andExpect(status().isCreated());
 
     mockMvc.perform(post("/tickets/" + ticketId + "/comments")
         .contentType(MediaType.APPLICATION_JSON)
         .content(internalComment))
-      .andExpect(status().isOk());
+      .andExpect(status().isCreated());
 
     // Filter by userId and status (customer request) - should see only public comments
     mockMvc.perform(get("/tickets")
@@ -262,7 +264,7 @@ class TicketIntegrationTest {
     String response = mockMvc.perform(post("/tickets")
         .contentType(MediaType.APPLICATION_JSON)
         .content(objectMapper.writeValueAsString(request)))
-      .andExpect(status().isOk())
+      .andExpect(status().isCreated())
       .andReturn().getResponse().getContentAsString();
 
     UUID ticketId = UUID.fromString(objectMapper.readTree(response).get("ticketId").asText());
@@ -287,12 +289,12 @@ class TicketIntegrationTest {
     mockMvc.perform(post("/tickets/" + ticketId + "/comments")
         .contentType(MediaType.APPLICATION_JSON)
         .content(publicComment))
-      .andExpect(status().isOk());
+      .andExpect(status().isCreated());
 
     mockMvc.perform(post("/tickets/" + ticketId + "/comments")
         .contentType(MediaType.APPLICATION_JSON)
         .content(internalComment))
-      .andExpect(status().isOk());
+      .andExpect(status().isCreated());
 
     // Request without filters - should see all comments (general listing)
     // Use JSONPath to find our specific ticket by ticketId and verify it has 2 comments
@@ -310,7 +312,7 @@ class TicketIntegrationTest {
     String response = mockMvc.perform(post("/tickets")
         .contentType(MediaType.APPLICATION_JSON)
         .content(objectMapper.writeValueAsString(request)))
-      .andExpect(status().isOk())
+      .andExpect(status().isCreated())
       .andReturn()
       .getResponse()
       .getContentAsString();
@@ -342,7 +344,7 @@ class TicketIntegrationTest {
     String response = mockMvc.perform(post("/tickets")
         .contentType(MediaType.APPLICATION_JSON)
         .content(objectMapper.writeValueAsString(request)))
-      .andExpect(status().isOk())
+      .andExpect(status().isCreated())
       .andReturn()
       .getResponse()
       .getContentAsString();
@@ -361,7 +363,7 @@ class TicketIntegrationTest {
     mockMvc.perform(post("/tickets/" + ticketId + "/comments")
         .contentType(MediaType.APPLICATION_JSON)
         .content(publicCommentByUser))
-      .andExpect(status().isOk())
+      .andExpect(status().isCreated())
       .andExpect(jsonPath("$.comments[0].authorId").value("user-123"))
       .andExpect(jsonPath("$.comments[0].content").value("This is a public comment from a user"))
       .andExpect(jsonPath("$.comments[0].visibility").value("public"));
@@ -376,7 +378,7 @@ class TicketIntegrationTest {
     String response = mockMvc.perform(post("/tickets")
         .contentType(MediaType.APPLICATION_JSON)
         .content(objectMapper.writeValueAsString(request)))
-      .andExpect(status().isOk())
+      .andExpect(status().isCreated())
       .andReturn()
       .getResponse()
       .getContentAsString();
@@ -395,7 +397,7 @@ class TicketIntegrationTest {
     mockMvc.perform(post("/tickets/" + ticketId + "/comments")
         .contentType(MediaType.APPLICATION_JSON)
         .content(internalCommentByAgent))
-      .andExpect(status().isOk())
+      .andExpect(status().isCreated())
       .andExpect(jsonPath("$.comments[0].authorId").value("agent-123"))
       .andExpect(jsonPath("$.comments[0].content").value("This is an internal note from an agent"))
       .andExpect(jsonPath("$.comments[0].visibility").value("internal"));
