@@ -1,0 +1,10 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="Run TicketApplication - Local" type="SpringBootApplicationConfigurationType" factoryName="Spring Boot">
+    <option name="ACTIVE_PROFILES" value="local" />
+    <module name="support-ticket-system" />
+    <option name="SPRING_BOOT_MAIN_CLASS" value="com.example.ticket.TicketApplication" />
+    <method v="2">
+      <option name="Make" enabled="true" />
+    </method>
+  </configuration>
+</component>
