@@ -110,6 +110,63 @@ class CommentVisibilityServiceTest {
                 "Should throw IllegalArgumentException for invalid visibility"
             );
         }
+
+        @Test
+        @DisplayName("Should prevent users from posting internal comments")
+        void shouldPreventUsersFromPostingInternalComments() {
+            // Given
+            CreateTicketRequest request = new CreateTicketRequest("user-001", "Test ticket", "Description");
+            Ticket ticket = ticketService.createTicket(request);
+            AddCommentRequest internalCommentRequest = new AddCommentRequest("user-123", "This should be internal", "internal");
+
+            // When & Then
+            IllegalArgumentException exception = assertThrows(
+                IllegalArgumentException.class,
+                () -> ticketService.addComment(ticket.getTicketId(), internalCommentRequest),
+                "Should throw IllegalArgumentException when user tries to post internal comment"
+            );
+            
+            assertEquals("Users can only post public comments", exception.getMessage(),
+                "Should have specific error message about user comment restrictions");
+        }
+
+        @Test
+        @DisplayName("Should allow users to post public comments")
+        void shouldAllowUsersToPostPublicComments() {
+            // Given
+            CreateTicketRequest request = new CreateTicketRequest("user-001", "Test ticket", "Description");
+            Ticket ticket = ticketService.createTicket(request);
+            AddCommentRequest publicCommentRequest = new AddCommentRequest("user-123", "This is a public comment", "public");
+
+            // When
+            Ticket updatedTicket = ticketService.addComment(ticket.getTicketId(), publicCommentRequest);
+
+            // Then
+            assertEquals(1, updatedTicket.getComments().size(), "Should have one comment");
+            Comment comment = updatedTicket.getComments().get(0);
+            assertEquals(CommentVisibility.PUBLIC, comment.visibility());
+            assertEquals("This is a public comment", comment.content());
+            assertEquals("user-123", comment.authorId());
+        }
+
+        @Test
+        @DisplayName("Should allow agents to post internal comments")
+        void shouldAllowAgentsToPostInternalComments() {
+            // Given
+            CreateTicketRequest request = new CreateTicketRequest("user-001", "Test ticket", "Description");
+            Ticket ticket = ticketService.createTicket(request);
+            AddCommentRequest internalCommentRequest = new AddCommentRequest("agent-123", "Internal agent note", "internal");
+
+            // When
+            Ticket updatedTicket = ticketService.addComment(ticket.getTicketId(), internalCommentRequest);
+
+            // Then
+            assertEquals(1, updatedTicket.getComments().size(), "Should have one comment");
+            Comment comment = updatedTicket.getComments().get(0);
+            assertEquals(CommentVisibility.INTERNAL, comment.visibility());
+            assertEquals("Internal agent note", comment.content());
+            assertEquals("agent-123", comment.authorId());
+        }
     }
 
     @Nested

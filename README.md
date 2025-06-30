@@ -124,6 +124,9 @@ Content-Type: application/json
 ### Comment System
 - **Public Comments**: Visible to both users and agents
 - **Internal Comments**: Visible only to support staff
+- **User Restrictions**: Users (authorId starting with "user-") can only post public comments
+- **Agent Permissions**: Agents can post both public and internal comments
+- **Immutable Comments**: Comments cannot be modified once created for audit trail
 - **Audit Trail**: All comments are timestamped and attributed
 
 ### Error Handling

@@ -246,6 +246,7 @@ public class TicketService {
      * <ul>
      *   <li>Only public comments are visible to users</li>
      *   <li>Agents can add both public and internal comments</li>
+     *   <li>Users (authorId starting with "user-") can only add public comments</li>
      *   <li>Comments are immutable once created for audit trail</li>
      * </ul>
      * 
@@ -260,6 +261,7 @@ public class TicketService {
      * 
      * <p>Comment processing:</p>
      * <ul>
+     *   <li>Validates user permissions for comment visibility</li>
      *   <li>Generates a unique comment ID (UUID)</li>
      *   <li>Sets creation timestamp</li>
      *   <li>Validates and sets visibility level (public/internal)</li>
@@ -272,11 +274,15 @@ public class TicketService {
      * @return the updated ticket with the new comment added
      * @throws NoSuchElementException if no ticket exists with the given ID
      * @throws IllegalArgumentException if the visibility value is not valid (public/internal)
+     * @throws IllegalArgumentException if a user tries to post an internal comment
      */
     public Ticket addComment(UUID ticketId, AddCommentRequest request) {
         log.debug("Adding comment to ticket {} by author {}", ticketId, request.authorId());
         // Retrieve the ticket or throw exception if not found
         Ticket ticket = repository.findById(ticketId).orElseThrow();
+
+        // Validate comment visibility permissions
+        validateCommentPermissions(request.authorId(), request.visibility());
 
         // Create the new comment with generated ID and timestamp
         Comment comment = new Comment(
@@ -295,5 +301,24 @@ public class TicketService {
         Ticket savedTicket = repository.save(ticket);
         log.info("Added {} comment to ticket {} by {}", request.visibility(), ticketId, request.authorId());
         return savedTicket;
+    }
+
+    /**
+     * Validates that the author has permission to post comments with the specified visibility.
+     * 
+     * <p>Business rule: Users (authorId starting with "user-") can only post public comments.
+     * Agents can post both public and internal comments.</p>
+     * 
+     * @param authorId the ID of the comment author
+     * @param visibility the requested comment visibility
+     * @throws IllegalArgumentException if a user tries to post an internal comment
+     */
+    private void validateCommentPermissions(String authorId, String visibility) {
+        // Check if this is a user (authorId starts with "user-") trying to post an internal comment
+        if (authorId != null && authorId.startsWith("user-") && 
+            "internal".equalsIgnoreCase(visibility)) {
+            log.warn("User {} attempted to post internal comment", authorId);
+            throw new IllegalArgumentException("Users can only post public comments");
+        }
     }
 }

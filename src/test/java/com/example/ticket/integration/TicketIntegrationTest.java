@@ -301,4 +301,104 @@ class TicketIntegrationTest {
       .andExpect(jsonPath("$[?(@.ticketId=='" + ticketId + "')].comments.length()").value(2)); // All comments visible
   }
 
+  @Test
+  @DisplayName("Should prevent users from posting internal comments")
+  void testUserCannotPostInternalComments() throws Exception {
+    // Step 1: Create a ticket
+    CreateTicketRequest request = new CreateTicketRequest("user-001", "User Comment Test", "Testing user comment restrictions");
+
+    String response = mockMvc.perform(post("/tickets")
+        .contentType(MediaType.APPLICATION_JSON)
+        .content(objectMapper.writeValueAsString(request)))
+      .andExpect(status().isOk())
+      .andReturn()
+      .getResponse()
+      .getContentAsString();
+
+    UUID ticketId = UUID.fromString(objectMapper.readTree(response).get("ticketId").asText());
+
+    // Step 2: Try to add an internal comment as a user (should fail)
+    String internalCommentByUser = """
+            {
+              "authorId": "user-123",
+              "content": "This should not be allowed as internal",
+              "visibility": "internal"
+            }
+            """;
+
+    mockMvc.perform(post("/tickets/" + ticketId + "/comments")
+        .contentType(MediaType.APPLICATION_JSON)
+        .content(internalCommentByUser))
+      .andExpect(status().isBadRequest())
+      .andExpect(jsonPath("$.message").value("Users can only post public comments"));
+  }
+
+  @Test
+  @DisplayName("Should allow users to post public comments")
+  void testUserCanPostPublicComments() throws Exception {
+    // Step 1: Create a ticket
+    CreateTicketRequest request = new CreateTicketRequest("user-001", "User Public Comment Test", "Testing user public comments");
+
+    String response = mockMvc.perform(post("/tickets")
+        .contentType(MediaType.APPLICATION_JSON)
+        .content(objectMapper.writeValueAsString(request)))
+      .andExpect(status().isOk())
+      .andReturn()
+      .getResponse()
+      .getContentAsString();
+
+    UUID ticketId = UUID.fromString(objectMapper.readTree(response).get("ticketId").asText());
+
+    // Step 2: Add a public comment as a user (should succeed)
+    String publicCommentByUser = """
+            {
+              "authorId": "user-123",
+              "content": "This is a public comment from a user",
+              "visibility": "public"
+            }
+            """;
+
+    mockMvc.perform(post("/tickets/" + ticketId + "/comments")
+        .contentType(MediaType.APPLICATION_JSON)
+        .content(publicCommentByUser))
+      .andExpect(status().isOk())
+      .andExpect(jsonPath("$.comments[0].authorId").value("user-123"))
+      .andExpect(jsonPath("$.comments[0].content").value("This is a public comment from a user"))
+      .andExpect(jsonPath("$.comments[0].visibility").value("public"));
+  }
+
+  @Test
+  @DisplayName("Should allow agents to post internal comments")
+  void testAgentCanPostInternalComments() throws Exception {
+    // Step 1: Create a ticket
+    CreateTicketRequest request = new CreateTicketRequest("user-001", "Agent Comment Test", "Testing agent comment permissions");
+
+    String response = mockMvc.perform(post("/tickets")
+        .contentType(MediaType.APPLICATION_JSON)
+        .content(objectMapper.writeValueAsString(request)))
+      .andExpect(status().isOk())
+      .andReturn()
+      .getResponse()
+      .getContentAsString();
+
+    UUID ticketId = UUID.fromString(objectMapper.readTree(response).get("ticketId").asText());
+
+    // Step 2: Add an internal comment as an agent (should succeed)
+    String internalCommentByAgent = """
+            {
+              "authorId": "agent-123",
+              "content": "This is an internal note from an agent",
+              "visibility": "internal"
+            }
+            """;
+
+    mockMvc.perform(post("/tickets/" + ticketId + "/comments")
+        .contentType(MediaType.APPLICATION_JSON)
+        .content(internalCommentByAgent))
+      .andExpect(status().isOk())
+      .andExpect(jsonPath("$.comments[0].authorId").value("agent-123"))
+      .andExpect(jsonPath("$.comments[0].content").value("This is an internal note from an agent"))
+      .andExpect(jsonPath("$.comments[0].visibility").value("internal"));
+  }
+
 }
