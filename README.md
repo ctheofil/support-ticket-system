@@ -180,6 +180,11 @@ public class GlobalExceptionHandler {
 ## Logging
 The application uses Logstash JSON encoder for structured logging with profile-based log levels.
 
+## AI Usage
+**Tools**: Amazon Q Developer
+
+**Cases**: Documentation, Increasing test coverage
+
 ## Technology Stack
 - **Java 17**: Modern Java features including Records for immutable data classes
 - **Spring Boot 3.5.3**: Framework for rapid development
